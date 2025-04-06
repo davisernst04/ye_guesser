@@ -18,7 +18,7 @@ export default function ThreeDMarqueeDemoSecond() {
     "https://upload.wikimedia.org/wikipedia/en/4/4d/The_life_of_pablo_alternate.jpg",
     "https://upload.wikimedia.org/wikipedia/en/7/74/Ye_album_cover.jpg",
     "https://m.media-amazon.com/images/I/81vqCvM2EJL._UF1000,1000_QL80_.jpg",
-    "https://upload.wikimedia.org/wikipedia/en/a/a4/Kanye_West_-_Jesus_Is_King.png",
+    "https://m.media-amazon.com/images/I/61Ptk7IYKDL._UF1000,1000_QL80_.jpg",
     "https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Almost_black_square_020305.svg/220px-Almost_black_square_020305.svg.png",
     "https://upload.wikimedia.org/wikipedia/en/thumb/b/b2/Kanye_West_and_Ty_Dolla_Sign_%28%C2%A5%24%29_%E2%80%93_Vultures.png/220px-Kanye_West_and_Ty_Dolla_Sign_%28%C2%A5%24%29_%E2%80%93_Vultures.png",
     "https://upload.wikimedia.org/wikipedia/en/6/66/%C2%A5%24_-_Vultures_2.png",
@@ -32,7 +32,7 @@ export default function ThreeDMarqueeDemoSecond() {
     "https://upload.wikimedia.org/wikipedia/en/4/4d/The_life_of_pablo_alternate.jpg",
     "https://upload.wikimedia.org/wikipedia/en/7/74/Ye_album_cover.jpg",
     "https://m.media-amazon.com/images/I/81vqCvM2EJL._UF1000,1000_QL80_.jpg",
-    "https://upload.wikimedia.org/wikipedia/en/a/a4/Kanye_West_-_Jesus_Is_King.png",
+    "https://m.media-amazon.com/images/I/61Ptk7IYKDL._UF1000,1000_QL80_.jpg",
     "https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Almost_black_square_020305.svg/220px-Almost_black_square_020305.svg.png",
     "https://upload.wikimedia.org/wikipedia/en/thumb/b/b2/Kanye_West_and_Ty_Dolla_Sign_%28%C2%A5%24%29_%E2%80%93_Vultures.png/220px-Kanye_West_and_Ty_Dolla_Sign_%28%C2%A5%24%29_%E2%80%93_Vultures.png",
     "https://upload.wikimedia.org/wikipedia/en/6/66/%C2%A5%24_-_Vultures_2.png",
@@ -42,23 +42,16 @@ export default function ThreeDMarqueeDemoSecond() {
   return (
     <div className="relative mx-auto flex h-screen w-full flex-col items-center justify-center overflow-hidden">
       <h2
-        className={`relative z-20 mx-auto max-w-4xl text-center text-2xl font-bold text-balance md:text-4xl lg:text-6xl ${font.className}`}
+        className={`relative z-20 mx-auto max-w-4xl text-center text-4xl font-bold text-balance md:text-6xl lg:text-8xl ${font.className}`}
         style={{ color: "#13f235" }}
       >
         I hate guessing <br />
         Ye tracks <br />
         its awesome
       </h2>
-      <p className="relative z-20 mx-auto max-w-2xl py-8 text-center text-sm text-neutral-200 md:text-base">
-        Welcome to Ye guesser!
-      </p>
-
       <div className="relative z-20 flex flex-wrap items-center justify-center gap-4 pt-4">
-        <button className="rounded-md bg-sky-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-sky-700 focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-black focus:outline-none">
+        <button className="rounded-md bg-sky-600 px-30 py-2.5 text-sm font-medium text-white transition-colors hover:bg-sky-700 focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-black focus:outline-none">
           Play
-        </button>
-        <button className="rounded-md border border-white/20 bg-white/10 px-6 py-2.5 text-sm font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20 focus:ring-2 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-black focus:outline-none">
-          Read more
         </button>
       </div>
 
