@@ -19,10 +19,7 @@ export const ThreeDMarquee = ({
   });
   return (
     <div
-      className={cn(
-        "mx-auto block h-full w-full overflow-hidden",
-        className,
-      )}
+      className={cn("mx-auto block h-full w-full overflow-hidden", className)}
     >
       <div className="flex size-full items-center justify-center">
         <div className="size-[1720px] shrink-0 scale-[0.6] sm:scale-[0.85] lg:scale-110">
