@@ -1,4 +1,18 @@
+import { AudioPlayer } from "@/components/audio-player";
+
 export default async function Page() {
+  interface Album {
+    id: number;
+    title: string;
+    tracklist: string;
+  }
+
+  interface Track {
+    id: number;
+    title: string;
+    preview: string;
+  }
+
   const res = await fetch("https://api.deezer.com/artist/230/albums");
 
   const { data } = await res.json();
@@ -9,7 +23,7 @@ export default async function Page() {
   ];
 
   const filteredAlbums = data.filter(
-    (album: any) => !excludeIds.includes(album.id),
+    (album: Album) => !excludeIds.includes(album.id),
   );
 
   const randomAlbum =
@@ -26,7 +40,7 @@ export default async function Page() {
   ];
 
   const filteredTracks = tracklistData.data.filter(
-    (track: any) => !excludeInterludesSkits.includes(track.id),
+    (track: Track) => !excludeInterludesSkits.includes(track.id),
   );
 
   const randomTrack =
@@ -38,10 +52,7 @@ export default async function Page() {
         Random Track from Random Album
       </h1>
       <div className="flex flex-col items-center justify-center mt-10">
-        <audio controls>
-          <source src={randomTrack.preview} type="audio/mpeg" />
-          Your browser does not support the audio element.
-        </audio>
+        <AudioPlayer src={randomTrack.preview} />
       </div>
     </div>
   );

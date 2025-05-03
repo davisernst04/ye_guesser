@@ -1,10 +1,13 @@
 "use client";
 import { ThreeDMarquee } from "@/components/ui/3d-marquee";
 import localFont from "next/font/local";
-
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 const font = localFont({
   src: "../fonts/AwesomeBi_polar-Regular.ttf",
 });
+
+import { ModeToggle } from "@/components/mode-toggle";
 
 export default function ThreeDMarqueeDemoSecond() {
   const images = [
@@ -41,6 +44,10 @@ export default function ThreeDMarqueeDemoSecond() {
   ];
   return (
     <div className="relative mx-auto flex h-screen w-full flex-col items-center justify-center overflow-hidden">
+      <div className="absolute top-4 right-4 z-20">
+        <ModeToggle />
+      </div>
+
       <h2
         className={`relative z-20 mx-auto max-w-4xl text-center text-4xl font-bold text-balance md:text-6xl lg:text-8xl ${font.className}`}
         style={{ color: "#13f235" }}
@@ -50,9 +57,9 @@ export default function ThreeDMarqueeDemoSecond() {
         its awesome
       </h2>
       <div className="relative z-20 flex flex-wrap items-center justify-center gap-4 pt-4">
-        <button className="rounded-md bg-sky-600 px-30 py-2.5 text-sm font-medium text-white transition-colors hover:bg-sky-700 focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-black focus:outline-none">
-          Play
-        </button>
+        <Button asChild variant="default" size="lg" className="w-48">
+          <Link href="/play">Play</Link>
+        </Button>
       </div>
 
       {/* overlay */}
