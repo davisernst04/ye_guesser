@@ -1,5 +1,3 @@
-import { AudioPlayer } from "@/components/audio-player";
-
 export default async function Page() {
   interface Album {
     id: number;
@@ -14,7 +12,6 @@ export default async function Page() {
   }
 
   const res = await fetch("https://api.deezer.com/artist/230/albums");
-
   const { data } = await res.json();
 
   const excludeIds = [
@@ -52,7 +49,10 @@ export default async function Page() {
         Random Track from Random Album
       </h1>
       <div className="flex flex-col items-center justify-center mt-10">
-        <AudioPlayer src={randomTrack.preview} />
+        <audio controls>
+          <source src={randomTrack.preview} type="audio/mpeg" />
+          Your browser does not support the audio element.
+        </audio>
       </div>
     </div>
   );
