@@ -55,6 +55,10 @@ export default function PlayPage() {
     try {
       setError(null);
       setIsLoading(true);
+      
+      // Clear localStorage to ensure fresh start
+      localStorage.removeItem(STORAGE_KEY);
+      
       const res = await fetch("/api/random-track", {
         cache: "no-store",
       });
@@ -89,7 +93,19 @@ export default function PlayPage() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
-        setGameState(JSON.parse(saved) as GameState);
+        const parsedState = JSON.parse(saved) as GameState;
+        
+        // Ensure currentGuessNumber exists for old saved games
+        if (typeof parsedState.currentGuessNumber !== 'number') {
+          parsedState.currentGuessNumber = parsedState.guesses?.length || 0;
+        }
+        
+        // Ensure isFailed exists for old saved games
+        if (typeof parsedState.isFailed !== 'boolean') {
+          parsedState.isFailed = false;
+        }
+        
+        setGameState(parsedState);
         setIsLoading(false);
       } catch {
         startNewGame();
