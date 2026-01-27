@@ -54,10 +54,11 @@ export const ThreeDMarquee = ({
                       }}
                       key={imageIndex + image}
                       src={image}
-                      alt={`Image ${imageIndex + 1}`}
+                      alt={`Kanye West album cover ${imageIndex + 1}`}
                       className="aspect-[970/700] rounded-lg object-cover ring ring-gray-950/5 hover:shadow-4xl"
                       width={970}
                       height={700}
+                      loading="lazy"
                     />
                   </div>
                 ))}

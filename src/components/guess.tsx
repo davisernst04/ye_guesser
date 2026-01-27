@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -33,15 +33,21 @@ type Props = {
 };
 
 export function ComboboxDemo({ onGuess }: Props) {
-  const [open, setOpen] = React.useState(false);
-  const [value, setValue] = React.useState("");
-  const [input, setInput] = React.useState("");
-  const [tracks, setTracks] = React.useState<TrackOption[]>([]);
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState("");
+  const [input, setInput] = useState("");
+  const [tracks, setTracks] = useState<TrackOption[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  React.useEffect(() => {
-    fetch("/api/random-track")
-      .then((res) => res.json())
-      .then((data: Track[]) => {
+  useEffect(() => {
+    const fetchTracks = async () => {
+      try {
+        const res = await fetch("/api/random-track");
+        if (!res.ok) {
+          throw new Error("Failed to fetch tracks");
+        }
+
+        const data = (await res.json()) as Track[];
         const mapped = data.map((track) => ({
           id: track.id,
           title: track.title,
@@ -51,13 +57,37 @@ export function ComboboxDemo({ onGuess }: Props) {
           value: track.title.toLowerCase(),
         }));
         setTracks(mapped);
-      })
-      .catch((err) => console.error("Failed to fetch tracks:", err));
+      } catch (err) {
+        console.error(
+          "Failed to fetch tracks:",
+          err instanceof Error ? err.message : "Unknown error",
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTracks();
   }, []);
 
-  const filteredTracks = input
-    ? tracks.filter((t) => t.title.toLowerCase().includes(input.toLowerCase()))
-    : tracks;
+  const handleSelect = useCallback(
+    (trackTitle: string) => {
+      setValue(trackTitle);
+      setOpen(false);
+      onGuess(trackTitle);
+    },
+    [onGuess],
+  );
+
+  const filteredTracks = useMemo(
+    () =>
+      input
+        ? tracks.filter((t) =>
+            t.title.toLowerCase().includes(input.toLowerCase()),
+          )
+        : tracks,
+    [input, tracks],
+  );
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -67,8 +97,9 @@ export function ComboboxDemo({ onGuess }: Props) {
           role="combobox"
           aria-expanded={open}
           className="w-[200px] justify-between"
+          disabled={isLoading}
         >
-          {value || "Select a track"}
+          {value || (isLoading ? "Loading..." : "Select a track")}
           <ChevronsUpDown className="opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -86,11 +117,7 @@ export function ComboboxDemo({ onGuess }: Props) {
                 <CommandItem
                   key={track.id}
                   value={track.value}
-                  onSelect={() => {
-                    setValue(track.title);
-                    setOpen(false);
-                    onGuess(track.title); // Pass back the actual title
-                  }}
+                  onSelect={() => handleSelect(track.title)}
                 >
                   {track.label}
                   <Check
