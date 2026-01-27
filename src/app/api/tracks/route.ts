@@ -25,7 +25,7 @@ const EXCLUDE_TRACKS: readonly number[] = [
 ];
 
 export const runtime = "edge";
-export const dynamic = "force-dynamic";
+export const revalidate = 7200;
 
 export async function GET() {
   try {
@@ -46,7 +46,7 @@ export async function GET() {
     const trackPromises = filteredAlbums.map(async (album) => {
       try {
         const res = await fetch(album.tracklist, {
-          next: { revalidate: 3600 },
+          next: { revalidate: 7200 },
         });
 
         if (!res.ok) {
@@ -68,17 +68,10 @@ export async function GET() {
     const allTracksArrays = await Promise.all(trackPromises);
     const allTracks = allTracksArrays.flat();
 
-    if (allTracks.length === 0) {
-      throw new Error("No tracks available");
-    }
-
-    // Return a single random track instead of all tracks
-    const randomTrack = allTracks[Math.floor(Math.random() * allTracks.length)];
-
-    return NextResponse.json(randomTrack);
+    return NextResponse.json(allTracks);
   } catch (error) {
     console.error(
-      "Error in random-track API:",
+      "Error in tracks API:",
       error instanceof Error ? error.message : "Unknown error",
     );
     return NextResponse.json(

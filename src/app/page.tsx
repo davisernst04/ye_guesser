@@ -4,7 +4,6 @@ import { ThreeDMarquee } from "@/components/ui/3d-marquee";
 import localFont from "next/font/local";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ModeToggle } from "@/components/mode-toggle";
 import { memo } from "react";
 
 const customFont = localFont({
@@ -36,10 +35,6 @@ const MARQUEE_IMAGES = [...ALBUM_COVERS, ...ALBUM_COVERS];
 function HomePage() {
   return (
     <div className="relative mx-auto flex h-screen w-full flex-col items-center justify-center overflow-hidden">
-      <div className="absolute top-4 right-4 z-20">
-        <ModeToggle />
-      </div>
-
       <header className="relative z-20 mx-auto max-w-4xl text-center">
         <h1
           className={`text-4xl font-bold text-balance md:text-6xl lg:text-8xl ${customFont.className}`}
@@ -54,7 +49,7 @@ function HomePage() {
       <div className="relative z-20 flex flex-wrap items-center justify-center gap-4 pt-4">
         <Button asChild variant="default" size="lg" className="w-48">
           <Link href="/play" prefetch={true}>
-            Play
+            PLAY / NOW
           </Link>
         </Button>
       </div>

@@ -42,7 +42,7 @@ export function ComboboxDemo({ onGuess }: Props) {
   useEffect(() => {
     const fetchTracks = async () => {
       try {
-        const res = await fetch("/api/random-track");
+        const res = await fetch("/api/tracks");
         if (!res.ok) {
           throw new Error("Failed to fetch tracks");
         }
