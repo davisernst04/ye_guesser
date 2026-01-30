@@ -22,21 +22,20 @@ const ComboboxDemo = dynamic(
 );
 
 type Track = {
-  id: number;
-  title: string;
-  md5_image: string;
   preview: string;
   dayNumber?: number;
 };
 
 type GameState = {
   gameId: string;
-  track: Track;
+  preview: string;
   guesses: string[];
   isCompleted: boolean;
   isFailed: boolean;
   currentGuessNumber: number;
   dayNumber: number;
+  trackTitle?: string;
+  trackImage?: string;
 };
 
 const STORAGE_KEY = "songGameCurrent" as const;
@@ -83,7 +82,7 @@ export default function PlayPage() {
       const track = (await res.json()) as Track;
       const newGame: GameState = {
         gameId: generateGameId(),
-        track,
+        preview: track.preview,
         guesses: [],
         isCompleted: false,
         isFailed: false,
@@ -137,24 +136,54 @@ export default function PlayPage() {
   }, [startNewGame]);
 
   const handleGuess = useCallback(
-    (guess: string) => {
+    async (guess: string) => {
       if (!gameState || gameState.isCompleted || gameState.isFailed) return;
 
-      const isCorrect =
-        guess.toLowerCase() === gameState.track.title.toLowerCase();
-      const newGuessNumber = gameState.currentGuessNumber + 1;
-      const hasFailed = !isCorrect && newGuessNumber >= MAX_GUESSES;
+      try {
+        const res = await fetch("/api/validate-guess", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ guess, dayNumber: gameState.dayNumber }),
+        });
 
-      const updated: GameState = {
-        ...gameState,
-        guesses: [...gameState.guesses, guess],
-        isCompleted: isCorrect,
-        isFailed: hasFailed,
-        currentGuessNumber: newGuessNumber,
-      };
+        if (!res.ok) {
+          throw new Error("Failed to validate guess");
+        }
 
-      setGameState(updated);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        const { isCorrect, trackTitle, trackImage } = await res.json();
+        const newGuessNumber = gameState.currentGuessNumber + 1;
+        const hasFailed = !isCorrect && newGuessNumber >= MAX_GUESSES;
+
+        let updatedState: GameState = {
+          ...gameState,
+          guesses: [...gameState.guesses, guess],
+          isCompleted: isCorrect,
+          isFailed: hasFailed,
+          currentGuessNumber: newGuessNumber,
+        };
+
+        if (isCorrect) {
+          updatedState.trackTitle = trackTitle;
+          updatedState.trackImage = trackImage;
+        } else if (hasFailed) {
+          const answerRes = await fetch("/api/get-answer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dayNumber: gameState.dayNumber }),
+          });
+
+          if (answerRes.ok) {
+            const { title, md5_image } = await answerRes.json();
+            updatedState.trackTitle = title;
+            updatedState.trackImage = md5_image;
+          }
+        }
+
+        setGameState(updatedState);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedState));
+      } catch (err) {
+        console.error("Error validating guess:", err);
+      }
     },
     [gameState],
   );
@@ -188,7 +217,7 @@ export default function PlayPage() {
                 role="status"
                 aria-live="polite"
               >
-                CORRECT / YOU GUESSED &quot;{gameState.track.title}&quot; IN{" "}
+                CORRECT / YOU GUESSED &quot;{gameState.trackTitle}&quot; IN{" "}
                 {gameState.guesses.length}{" "}
                 {gameState.guesses.length === 1 ? "GUESS" : "GUESSES"}
               </div>
@@ -200,7 +229,7 @@ export default function PlayPage() {
                 role="status"
                 aria-live="polite"
               >
-                INCORRECT / THE CORRECT ANSWER WAS &quot;{gameState.track.title}
+                INCORRECT / THE CORRECT ANSWER WAS &quot;{gameState.trackTitle}
                 &quot;
               </div>
             )}
@@ -240,8 +269,8 @@ export default function PlayPage() {
           <div className="w-full max-w-[280px] sm:max-w-xs">
             <AspectRatio ratio={1 / 1}>
               <Image
-                src={`https://e-cdns-images.dzcdn.net/images/cover/${gameState.track.md5_image}/500x500.jpg`}
-                alt={`Album cover for ${gameState.track.title}`}
+                src={`https://e-cdns-images.dzcdn.net/images/cover/${gameState.trackImage}/500x500.jpg`}
+                alt={`Album cover for ${gameState.trackTitle}`}
                 fill
                 className="rounded-lg shadow-lg object-cover"
                 priority
@@ -269,7 +298,7 @@ export default function PlayPage() {
 
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4">
         <AudioPlayer 
-          audiosrc={gameState.track.preview} 
+          audiosrc={gameState.preview} 
           time={gameState.isCompleted || gameState.isFailed ? 30 : currentTime}
           autoPlay={gameState.isCompleted || gameState.isFailed}
         />

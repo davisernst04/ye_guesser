@@ -16,6 +16,7 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const hasAttemptedAutoPlay = useRef(false);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -25,10 +26,6 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
       console.log("Audio can play:", audiosrc);
       setIsLoaded(true);
       setError(false);
-      
-      if (autoPlay) {
-        playAudio();
-      }
     };
 
     const handleError = (e: Event) => {
@@ -46,7 +43,7 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
       audio.removeEventListener("canplay", handleCanPlay);
       audio.removeEventListener("error", handleError);
     };
-  }, [audiosrc, autoPlay]);
+  }, [audiosrc]);
 
   const playAudio = useCallback(() => {
     const audio = audioRef.current;
@@ -72,10 +69,14 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
           }, time * 1000);
         })
         .catch((err) => {
-          console.error("Failed to play audio:", err);
-          console.error("Audio source:", audiosrc);
+          if (err.name === 'NotAllowedError') {
+            console.log("Autoplay blocked - user interaction required");
+          } else {
+            console.error("Failed to play audio:", err);
+            console.error("Audio source:", audiosrc);
+            setError(true);
+          }
           setIsPlaying(false);
-          setError(true);
         });
     }
   }, [time, isPlaying, audiosrc]);
@@ -90,8 +91,16 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
         audio.pause();
         audio.currentTime = 0;
       }
+      hasAttemptedAutoPlay.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (autoPlay && isLoaded && !isPlaying && !hasAttemptedAutoPlay.current) {
+      hasAttemptedAutoPlay.current = true;
+      playAudio();
+    }
+  }, [autoPlay, isLoaded, isPlaying]);
 
   return (
     <div className="flex flex-col items-center gap-1.5">

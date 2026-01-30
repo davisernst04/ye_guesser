@@ -27,7 +27,7 @@ const EXCLUDE_TRACKS: readonly number[] = [
 function getDayNumber(): number {
   const now = new Date();
   const utcDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const epoch = new Date(Date.UTC(2026, 0, 1)); // January 1, 2026
+  const epoch = new Date(Date.UTC(2026, 0, 1));
   const daysSinceEpoch = Math.floor((utcDate.getTime() - epoch.getTime()) / (1000 * 60 * 60 * 24));
   return daysSinceEpoch;
 }
@@ -38,10 +38,26 @@ function seededRandom(seed: number): number {
 }
 
 export const runtime = "edge";
-export const revalidate = 86400;
 
-export async function GET() {
+export async function POST(request: Request) {
   try {
+    const { dayNumber } = await request.json();
+
+    if (typeof dayNumber !== "number") {
+      return NextResponse.json(
+        { error: "Invalid request" },
+        { status: 400 }
+      );
+    }
+
+    const currentDay = getDayNumber();
+    if (dayNumber !== currentDay) {
+      return NextResponse.json(
+        { error: "Invalid day number" },
+        { status: 400 }
+      );
+    }
+
     const albumRes = await fetch("https://api.deezer.com/artist/230/albums", {
       next: { revalidate: 86400 },
     });
@@ -51,7 +67,6 @@ export async function GET() {
     }
 
     const { data: albums } = (await albumRes.json()) as { data: Album[] };
-
     const filteredAlbums = albums.filter(
       (album) => !EXCLUDE_ALBUMS.includes(album.id),
     );
@@ -63,17 +78,12 @@ export async function GET() {
         });
 
         if (!res.ok) {
-          console.error(`Failed to fetch tracks for album ${album.id}`);
           return [];
         }
 
         const { data: trackData } = (await res.json()) as { data: Track[] };
         return trackData.filter((track) => !EXCLUDE_TRACKS.includes(track.id));
-      } catch (error) {
-        console.error(
-          `Error fetching tracks for album ${album.id}:`,
-          error instanceof Error ? error.message : "Unknown error",
-        );
+      } catch {
         return [];
       }
     });
@@ -85,21 +95,20 @@ export async function GET() {
       throw new Error("No tracks available");
     }
 
-    const dayNumber = getDayNumber();
     const trackIndex = Math.floor(seededRandom(dayNumber) * allTracks.length);
     const dailyTrack = allTracks[trackIndex];
 
-    return NextResponse.json({ 
-      preview: dailyTrack.preview,
-      dayNumber 
+    return NextResponse.json({
+      title: dailyTrack.title,
+      md5_image: dailyTrack.md5_image,
     });
   } catch (error) {
     console.error(
-      "Error in random-track API:",
+      "Error in get-answer API:",
       error instanceof Error ? error.message : "Unknown error",
     );
     return NextResponse.json(
-      { error: "Failed to fetch tracks" },
+      { error: "Failed to get answer" },
       { status: 500 },
     );
   }
