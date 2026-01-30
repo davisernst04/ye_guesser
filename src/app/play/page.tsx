@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 const AudioPlayer = dynamic(() => import("@/components/audio-player"), {
   ssr: false,
@@ -11,7 +12,8 @@ const AudioPlayer = dynamic(() => import("@/components/audio-player"), {
 });
 
 const ComboboxDemo = dynamic(
-  () => import("@/components/guess").then((mod) => ({ default: mod.ComboboxDemo })),
+  () =>
+    import("@/components/guess").then((mod) => ({ default: mod.ComboboxDemo })),
   {
     ssr: false,
     loading: () => (
@@ -25,6 +27,7 @@ type Track = {
   title: string;
   md5_image: string;
   preview: string;
+  dayNumber?: number;
 };
 
 type GameState = {
@@ -34,16 +37,28 @@ type GameState = {
   isCompleted: boolean;
   isFailed: boolean;
   currentGuessNumber: number;
+  dayNumber: number;
 };
 
 const STORAGE_KEY = "songGameCurrent" as const;
 
-// Guess time durations: 1s, 3s, 5s, 10s, 20s, 60s
-const GUESS_TIMES = [1, 3, 5, 10, 20, 60] as const;
+const GUESS_TIMES = [1, 3, 5, 10, 20, 30] as const;
 const MAX_GUESSES = 6;
 
 function generateGameId(): string {
   return crypto.randomUUID();
+}
+
+function getCurrentDayNumber(): number {
+  const now = new Date();
+  const utcDate = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+  const epoch = new Date(Date.UTC(2026, 0, 1)); // January 1, 2026
+  const daysSinceEpoch = Math.floor(
+    (utcDate.getTime() - epoch.getTime()) / (1000 * 60 * 60 * 24),
+  );
+  return daysSinceEpoch;
 }
 
 export default function PlayPage() {
@@ -55,10 +70,10 @@ export default function PlayPage() {
     try {
       setError(null);
       setIsLoading(true);
-      
+
       // Clear localStorage to ensure fresh start
       localStorage.removeItem(STORAGE_KEY);
-      
+
       const res = await fetch("/api/random-track", {
         cache: "no-store",
       });
@@ -75,14 +90,13 @@ export default function PlayPage() {
         isCompleted: false,
         isFailed: false,
         currentGuessNumber: 0,
+        dayNumber: track.dayNumber ?? getCurrentDayNumber(),
       };
 
       setGameState(newGame);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newGame));
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to start new game",
-      );
+      setError(err instanceof Error ? err.message : "Failed to start new game");
       console.error("Error starting new game:", err);
     } finally {
       setIsLoading(false);
@@ -90,21 +104,34 @@ export default function PlayPage() {
   }, []);
 
   useEffect(() => {
+    const currentDay = getCurrentDayNumber();
     const saved = localStorage.getItem(STORAGE_KEY);
+
     if (saved) {
       try {
         const parsedState = JSON.parse(saved) as GameState;
-        
+
+        // Check if it's a new day - if so, start a new game
+        if (parsedState.dayNumber !== currentDay) {
+          startNewGame();
+          return;
+        }
+
         // Ensure currentGuessNumber exists for old saved games
-        if (typeof parsedState.currentGuessNumber !== 'number') {
+        if (typeof parsedState.currentGuessNumber !== "number") {
           parsedState.currentGuessNumber = parsedState.guesses?.length || 0;
         }
-        
+
         // Ensure isFailed exists for old saved games
-        if (typeof parsedState.isFailed !== 'boolean') {
+        if (typeof parsedState.isFailed !== "boolean") {
           parsedState.isFailed = false;
         }
-        
+
+        // Ensure dayNumber exists for old saved games
+        if (typeof parsedState.dayNumber !== "number") {
+          parsedState.dayNumber = currentDay;
+        }
+
         setGameState(parsedState);
         setIsLoading(false);
       } catch {
@@ -138,21 +165,6 @@ export default function PlayPage() {
     [gameState],
   );
 
-  if (error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-6">
-        <div className="text-center space-y-4">
-          <p className="text-red-600 text-lg" role="alert">
-            {error}
-          </p>
-          <Button onClick={() => startNewGame()} variant="default">
-            Try Again
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   if (isLoading || !gameState) {
     return (
       <div className="flex min-h-screen items-center justify-center p-6">
@@ -164,8 +176,12 @@ export default function PlayPage() {
     );
   }
 
-  const currentGuessIndex = Math.min(gameState.currentGuessNumber, MAX_GUESSES - 1);
-  const currentTime: number = GUESS_TIMES[currentGuessIndex as 0 | 1 | 2 | 3 | 4 | 5];
+  const currentGuessIndex = Math.min(
+    gameState.currentGuessNumber,
+    MAX_GUESSES - 1,
+  );
+  const currentTime: number =
+    GUESS_TIMES[currentGuessIndex as 0 | 1 | 2 | 3 | 4 | 5];
 
   return (
     <main className="container mx-auto max-w-2xl p-6 space-y-6">
@@ -174,8 +190,11 @@ export default function PlayPage() {
       {/* Guess Counter */}
       <div className="text-center">
         <p className="text-lg">
-          Guess <span className="font-bold text-primary">{gameState.currentGuessNumber + 1}</span> of{" "}
-          <span className="font-bold">{MAX_GUESSES}</span>
+          Guess{" "}
+          <span className="font-bold text-primary">
+            {gameState.currentGuessNumber + 1}
+          </span>{" "}
+          of <span className="font-bold">{MAX_GUESSES}</span>
         </p>
         <p className="text-sm text-muted-foreground">
           Audio plays for {currentTime} second{currentTime !== 1 ? "s" : ""}
@@ -188,10 +207,7 @@ export default function PlayPage() {
           <h3 className="font-semibold mb-2">Previous Guesses:</h3>
           <div className="space-y-1">
             {gameState.guesses.map((guess, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-2 text-sm"
-              >
+              <div key={idx} className="flex items-center gap-2 text-sm">
                 <span className="text-muted-foreground">#{idx + 1}</span>
                 <span className="text-red-500 line-through">{guess}</span>
                 <span className="text-xs text-muted-foreground">
@@ -203,17 +219,37 @@ export default function PlayPage() {
         </div>
       )}
 
-      <div className="flex justify-center">
-        <Image
-          src={`https://e-cdns-images.dzcdn.net/images/cover/${gameState.track.md5_image}/500x500.jpg`}
-          alt={`Album cover for ${gameState.isCompleted ? gameState.track.title : "mystery track"}`}
-          width={300}
-          height={300}
-          className="rounded-lg shadow-lg"
-          priority
-          quality={85}
-        />
-      </div>
+      {gameState.isCompleted ? (
+        <div className="flex justify-center">
+          <div className="w-full max-w-xs">
+            <AspectRatio ratio={1 / 1}>
+              <Image
+                src={`https://e-cdns-images.dzcdn.net/images/cover/${gameState.track.md5_image}/500x500.jpg`}
+                alt={`Album cover for ${gameState.track.title}`}
+                fill
+                className="rounded-lg shadow-lg object-cover"
+                priority
+                quality={85}
+              />
+            </AspectRatio>
+          </div>
+        </div>
+      ) : (
+        <div className="flex justify-center">
+          <div className="w-full max-w-xs">
+            <AspectRatio ratio={1 / 1}>
+              <Image
+                src="/ye_stare.jpg"
+                alt="Ye Stare"
+                fill
+                className="rounded-lg shadow-lg object-cover"
+                priority
+                quality={85}
+              />
+            </AspectRatio>
+          </div>
+        </div>
+      )}
 
       {!gameState.isCompleted && !gameState.isFailed && (
         <div className="flex flex-col items-center gap-4">
@@ -229,7 +265,8 @@ export default function PlayPage() {
           aria-live="polite"
         >
           🎉 Correct! You guessed &quot;{gameState.track.title}&quot; in{" "}
-          {gameState.guesses.length} {gameState.guesses.length === 1 ? "guess" : "guesses"}!
+          {gameState.guesses.length}{" "}
+          {gameState.guesses.length === 1 ? "guess" : "guesses"}!
         </div>
       )}
 
@@ -239,15 +276,10 @@ export default function PlayPage() {
           role="status"
           aria-live="polite"
         >
-          ❌ Game Over! The correct answer was &quot;{gameState.track.title}&quot;
+          ❌ Game Over! The correct answer was &quot;{gameState.track.title}
+          &quot;
         </div>
       )}
-
-      <div className="flex justify-center pt-4">
-        <Button onClick={() => startNewGame()} variant="secondary" size="lg">
-          {gameState.isCompleted || gameState.isFailed ? "Play Again" : "Skip Song"}
-        </Button>
-      </div>
     </main>
   );
 }

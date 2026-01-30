@@ -24,13 +24,26 @@ const EXCLUDE_TRACKS: readonly number[] = [
   528869471, 528869521, 528869561, 528869581, 528869591,
 ];
 
+function getDayNumber(): number {
+  const now = new Date();
+  const utcDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const epoch = new Date(Date.UTC(2026, 0, 1)); // January 1, 2026
+  const daysSinceEpoch = Math.floor((utcDate.getTime() - epoch.getTime()) / (1000 * 60 * 60 * 24));
+  return daysSinceEpoch;
+}
+
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
 export const runtime = "edge";
-export const dynamic = "force-dynamic";
+export const revalidate = 86400;
 
 export async function GET() {
   try {
     const albumRes = await fetch("https://api.deezer.com/artist/230/albums", {
-      next: { revalidate: 7200 },
+      next: { revalidate: 86400 },
     });
 
     if (!albumRes.ok) {
@@ -46,7 +59,7 @@ export async function GET() {
     const trackPromises = filteredAlbums.map(async (album) => {
       try {
         const res = await fetch(album.tracklist, {
-          next: { revalidate: 3600 },
+          next: { revalidate: 86400 },
         });
 
         if (!res.ok) {
@@ -72,10 +85,14 @@ export async function GET() {
       throw new Error("No tracks available");
     }
 
-    // Return a single random track instead of all tracks
-    const randomTrack = allTracks[Math.floor(Math.random() * allTracks.length)];
+    const dayNumber = getDayNumber();
+    const trackIndex = Math.floor(seededRandom(dayNumber) * allTracks.length);
+    const dailyTrack = allTracks[trackIndex];
 
-    return NextResponse.json(randomTrack);
+    return NextResponse.json({ 
+      ...dailyTrack,
+      dayNumber 
+    });
   } catch (error) {
     console.error(
       "Error in random-track API:",
