@@ -73,11 +73,12 @@ function AudioPlayer({ audiosrc, time, autoPlay = false, dayNumber }: AudioPlaye
     const audio = audioRef.current;
     if (!audio || isPlaying) return;
 
-    console.log("Attempting to play audio:", currentPreviewUrl);
     setError(false);
+    setIsPlaying(true);
     
     try {
       // Fetch fresh preview URL
+      console.log("Fetching fresh preview URL...");
       const res = await fetch("/api/get-preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -89,60 +90,73 @@ function AudioPlayer({ audiosrc, time, autoPlay = false, dayNumber }: AudioPlaye
       }
 
       const { preview } = await res.json();
+      console.log("Got fresh preview URL:", preview);
       setCurrentPreviewUrl(preview);
       
       // Update audio source with fresh URL
       audio.src = preview;
-    } catch (err) {
-      console.error("Failed to fetch fresh preview URL:", err);
-      setError(true);
-      return;
-    }
-    
-    // Load the audio on user interaction for mobile Safari
-    if (audio.readyState < 2) {
+      
+      // Load the audio
       audio.load();
-    }
-    
-    // Reset audio before playing
-    audio.currentTime = 0;
-    
-    setIsPlaying(true);
+      
+      // Wait for audio to be ready
+      await new Promise<void>((resolve, reject) => {
+        const onCanPlay = () => {
+          audio.removeEventListener("canplay", onCanPlay);
+          audio.removeEventListener("error", onError);
+          resolve();
+        };
+        
+        const onError = () => {
+          audio.removeEventListener("canplay", onCanPlay);
+          audio.removeEventListener("error", onError);
+          reject(new Error("Failed to load audio"));
+        };
+        
+        audio.addEventListener("canplay", onCanPlay);
+        audio.addEventListener("error", onError);
+      });
+      
+      // Reset audio before playing
+      audio.currentTime = 0;
+      
+      console.log("Attempting to play audio:", preview);
+      const playPromise = audio.play();
 
-    const playPromise = audio.play();
-
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          console.log("Audio playing successfully");
-          setIsLoaded(true);
-          timeoutRef.current = setTimeout(() => {
-            if (audio) {
-              audio.pause();
-              audio.currentTime = 0;
-              setIsPlaying(false);
-              console.log("Audio stopped after", time, "seconds");
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log("Audio playing successfully");
+            setIsLoaded(true);
+            timeoutRef.current = setTimeout(() => {
+              if (audio) {
+                audio.pause();
+                audio.currentTime = 0;
+                setIsPlaying(false);
+                console.log("Audio stopped after", time, "seconds");
+              }
+            }, time * 1000);
+          })
+          .catch((err) => {
+            if (err.name === 'NotAllowedError') {
+              console.log("Autoplay blocked - user interaction required");
+            } else if (err.name === 'NotSupportedError') {
+              console.error("Audio format not supported");
+              setError(true);
+            } else if (err.name !== 'AbortError') {
+              console.error("Failed to play audio:", err);
+              console.error("Error name:", err.name);
+              setError(true);
             }
-          }, time * 1000);
-        })
-        .catch((err) => {
-          if (err.name === 'NotAllowedError') {
-            console.log("Autoplay blocked - user interaction required");
             setIsPlaying(false);
-          } else if (err.name === 'NotSupportedError') {
-            console.error("Audio format not supported:", currentPreviewUrl);
-            setError(true);
-            setIsPlaying(false);
-          } else {
-            console.error("Failed to play audio:", err);
-            console.error("Error name:", err.name);
-            console.error("Audio source:", currentPreviewUrl);
-            setError(true);
-            setIsPlaying(false);
-          }
-        });
+          });
+      }
+    } catch (err) {
+      console.error("Failed to fetch or load preview:", err);
+      setError(true);
+      setIsPlaying(false);
     }
-  }, [time, isPlaying, currentPreviewUrl, dayNumber]);
+  }, [time, isPlaying, dayNumber]);
 
   useEffect(() => {
     const audio = audioRef.current;
