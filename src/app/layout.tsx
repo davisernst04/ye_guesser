@@ -10,13 +10,21 @@ const arialBold = localFont({
   fallback: ["Arial", "Helvetica", "sans-serif"],
 });
 
+const customFont = localFont({
+  src: "../fonts/AwesomeBi_polar-Regular.ttf",
+  variable: "--font-custom",
+  display: "swap",
+  preload: true,
+  fallback: ["system-ui", "sans-serif"],
+});
+
 export const metadata: Metadata = {
   title: {
-    default: "Ye Guesser - Guess the Kanye West Track",
+    default: "Ye Guesser",
     template: "%s | Ye Guesser",
   },
   description:
-    "Test your Kanye West music knowledge! Listen to track previews and guess the song title. Play the ultimate Ye music guessing game.",
+    "Test your Ye music knowledge! Listen to track previews and guess the song title.",
   keywords: [
     "Kanye West",
     "Ye",
@@ -26,20 +34,20 @@ export const metadata: Metadata = {
     "guess the song",
     "hip hop game",
   ],
-  authors: [{ name: "Ye Guesser" }],
-  creator: "Ye Guesser",
+  authors: [{ name: "Davis Ernst" }],
+  creator: "Davis Ernst",
   openGraph: {
     type: "website",
     locale: "en_US",
     url: "https://ye-guesser.vercel.app",
-    title: "Ye Guesser - Guess the Kanye West Track",
+    title: "Ye Guesser",
     description:
       "Test your Kanye West music knowledge! Listen to track previews and guess the song title.",
     siteName: "Ye Guesser",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Ye Guesser - Guess the Kanye West Track",
+    title: "Ye Guesser",
     description:
       "Test your Kanye West music knowledge! Listen to track previews and guess the song title.",
   },
@@ -75,7 +83,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <body className={`${arialBold.variable} font-sans antialiased`}>
+      <body
+        className={`${arialBold.variable} ${customFont.variable} font-sans antialiased`}
+      >
         {children}
       </body>
     </html>

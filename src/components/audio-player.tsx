@@ -16,7 +16,6 @@ function AudioPlayer({ audiosrc, time }: AudioPlayerProps) {
   const [error, setError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Handle audio loaded
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -36,7 +35,6 @@ function AudioPlayer({ audiosrc, time }: AudioPlayerProps) {
     audio.addEventListener("canplay", handleCanPlay);
     audio.addEventListener("error", handleError);
 
-    // Try to load
     audio.load();
 
     return () => {
@@ -91,10 +89,10 @@ function AudioPlayer({ audiosrc, time }: AudioPlayerProps) {
   }, []);
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <audio 
-        ref={audioRef} 
-        src={audiosrc} 
+    <div className="flex flex-col items-center gap-1.5">
+      <audio
+        ref={audioRef}
+        src={audiosrc}
         preload="auto"
         crossOrigin="anonymous"
       >
@@ -102,6 +100,7 @@ function AudioPlayer({ audiosrc, time }: AudioPlayerProps) {
       </audio>
       <Button
         onClick={playAudio}
+        className="cursor-pointer"
         variant="outline"
         size="icon"
         disabled={isPlaying || error}
@@ -125,10 +124,10 @@ function AudioPlayer({ audiosrc, time }: AudioPlayerProps) {
         )}
       </Button>
       {error && (
-        <p className="text-xs text-red-500">Failed to load audio preview</p>
+        <p className="text-xs text-red-500 text-center">Failed to load audio preview</p>
       )}
       {!isLoaded && !error && (
-        <p className="text-xs text-muted-foreground">Loading audio...</p>
+        <p className="text-xs text-muted-foreground text-center">Loading audio...</p>
       )}
     </div>
   );

@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 const AudioPlayer = dynamic(() => import("@/components/audio-player"), {
@@ -54,7 +53,7 @@ function getCurrentDayNumber(): number {
   const utcDate = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
   );
-  const epoch = new Date(Date.UTC(2026, 0, 1)); // January 1, 2026
+  const epoch = new Date(Date.UTC(2026, 0, 1));
   const daysSinceEpoch = Math.floor(
     (utcDate.getTime() - epoch.getTime()) / (1000 * 60 * 60 * 24),
   );
@@ -71,7 +70,6 @@ export default function PlayPage() {
       setError(null);
       setIsLoading(true);
 
-      // Clear localStorage to ensure fresh start
       localStorage.removeItem(STORAGE_KEY);
 
       const res = await fetch("/api/random-track", {
@@ -111,23 +109,19 @@ export default function PlayPage() {
       try {
         const parsedState = JSON.parse(saved) as GameState;
 
-        // Check if it's a new day - if so, start a new game
         if (parsedState.dayNumber !== currentDay) {
           startNewGame();
           return;
         }
 
-        // Ensure currentGuessNumber exists for old saved games
         if (typeof parsedState.currentGuessNumber !== "number") {
           parsedState.currentGuessNumber = parsedState.guesses?.length || 0;
         }
 
-        // Ensure isFailed exists for old saved games
         if (typeof parsedState.isFailed !== "boolean") {
           parsedState.isFailed = false;
         }
 
-        // Ensure dayNumber exists for old saved games
         if (typeof parsedState.dayNumber !== "number") {
           parsedState.dayNumber = currentDay;
         }
@@ -167,7 +161,7 @@ export default function PlayPage() {
 
   if (isLoading || !gameState) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-6">
+      <div className="flex min-h-screen items-center justify-center p-4 sm:p-6">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
           <p className="text-lg">Loading game...</p>
@@ -184,44 +178,66 @@ export default function PlayPage() {
     GUESS_TIMES[currentGuessIndex as 0 | 1 | 2 | 3 | 4 | 5];
 
   return (
-    <main className="container mx-auto max-w-2xl p-6 space-y-6">
-      <h1 className="text-3xl font-bold text-center">Guess the Song</h1>
+    <main className="max-w-2xl px-4 py-6 sm:px-6 sm:py-8 md:px-8 mx-auto space-y-6">
+      <div className="flex flex-col justify-center">
+        {gameState.isCompleted || gameState.isFailed ? (
+          <>
+            {gameState.isCompleted && (
+              <div
+                className="font-bold text-center text-lg sm:text-xl px-4"
+                role="status"
+                aria-live="polite"
+              >
+                CORRECT / YOU GUESSED &quot;{gameState.track.title}&quot; IN{" "}
+                {gameState.guesses.length}{" "}
+                {gameState.guesses.length === 1 ? "GUESS" : "GUESSES"}
+              </div>
+            )}
 
-      {/* Guess Counter */}
-      <div className="text-center">
-        <p className="text-lg">
-          Guess{" "}
-          <span className="font-bold text-primary">
-            {gameState.currentGuessNumber + 1}
-          </span>{" "}
-          of <span className="font-bold">{MAX_GUESSES}</span>
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Audio plays for {currentTime} second{currentTime !== 1 ? "s" : ""}
-        </p>
+            {gameState.isFailed && (
+              <div
+                className="font-bold text-center text-lg sm:text-xl px-4"
+                role="status"
+                aria-live="polite"
+              >
+                INCORRECT / THE CORRECT ANSWER WAS &quot;{gameState.track.title}
+                &quot;
+              </div>
+            )}
+            <h1
+              className="text-center font-custom font-bold text-2xl sm:text-3xl mt-4 px-4"
+              style={{ color: "#13f235" }}
+            >
+              Come back tomorrow for a new song to guess
+            </h1>
+          </>
+        ) : (
+          <>
+            <h1 className="text-2xl sm:text-3xl font-bold text-center px-4">
+              GUESS THE SONG
+            </h1>
+
+            {/* Guess Counter */}
+            <div className="text-center space-y-1 mt-3 px-4">
+              <p className="text-base sm:text-lg">
+                GUESS{" "}
+                <span className="font-bold text-primary">
+                  {gameState.currentGuessNumber + 1}
+                </span>{" "}
+                OF <span className="font-bold">{MAX_GUESSES}</span>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                AUDIO PLAYS FOR {currentTime} SECOND
+                {currentTime !== 1 ? "S" : ""}
+              </p>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Previous Guesses */}
-      {gameState.guesses.length > 0 && (
-        <div className="bg-card border rounded-lg p-4">
-          <h3 className="font-semibold mb-2">Previous Guesses:</h3>
-          <div className="space-y-1">
-            {gameState.guesses.map((guess, idx) => (
-              <div key={idx} className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground">#{idx + 1}</span>
-                <span className="text-red-500 line-through">{guess}</span>
-                <span className="text-xs text-muted-foreground">
-                  ({GUESS_TIMES[idx]}s)
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {gameState.isCompleted ? (
-        <div className="flex justify-center">
-          <div className="w-full max-w-xs">
+      {gameState.isCompleted || gameState.isFailed ? (
+        <div className="flex justify-center px-4">
+          <div className="w-full max-w-[280px] sm:max-w-xs">
             <AspectRatio ratio={1 / 1}>
               <Image
                 src={`https://e-cdns-images.dzcdn.net/images/cover/${gameState.track.md5_image}/500x500.jpg`}
@@ -235,8 +251,8 @@ export default function PlayPage() {
           </div>
         </div>
       ) : (
-        <div className="flex justify-center">
-          <div className="w-full max-w-xs">
+        <div className="flex justify-center px-4">
+          <div className="w-full max-w-[280px] sm:max-w-xs">
             <AspectRatio ratio={1 / 1}>
               <Image
                 src="/ye_stare.jpg"
@@ -252,32 +268,45 @@ export default function PlayPage() {
       )}
 
       {!gameState.isCompleted && !gameState.isFailed && (
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex items-center justify-center gap-3 sm:gap-4 px-4">
           <AudioPlayer audiosrc={gameState.track.preview} time={currentTime} />
           <ComboboxDemo onGuess={handleGuess} />
         </div>
       )}
 
-      {gameState.isCompleted && (
-        <div
-          className="text-green-600 dark:text-green-400 font-bold text-center text-xl animate-bounce"
-          role="status"
-          aria-live="polite"
-        >
-          🎉 Correct! You guessed &quot;{gameState.track.title}&quot; in{" "}
-          {gameState.guesses.length}{" "}
-          {gameState.guesses.length === 1 ? "guess" : "guesses"}!
-        </div>
-      )}
-
-      {gameState.isFailed && (
-        <div
-          className="text-red-600 dark:text-red-400 font-bold text-center text-xl"
-          role="status"
-          aria-live="polite"
-        >
-          ❌ Game Over! The correct answer was &quot;{gameState.track.title}
-          &quot;
+      {gameState.guesses.length > 0 && (
+        <div className="flex justify-center px-4">
+          <div className="w-full max-w-[280px] sm:max-w-xs space-y-2">
+            <div className="items-center justify-center">
+              <h3 className="font-semibold text-sm sm:text-base">
+                PREVIOUS / GUESSES
+              </h3>
+              {gameState.guesses.map((guess, idx) => (
+                <div key={idx} className="text-left text-sm">
+                  {gameState.isCompleted &&
+                  idx === gameState.guesses.length - 1 ? (
+                    <>
+                      <span className="text-green-500 font-medium">
+                        {guess}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {" "}
+                        ({GUESS_TIMES[idx]}s)
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-red-500 line-through">{guess}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {" "}
+                        ({GUESS_TIMES[idx]}s)
+                      </span>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </main>

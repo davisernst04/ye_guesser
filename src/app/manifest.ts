@@ -2,7 +2,7 @@ import { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Ye Guesser - Kanye West Music Game",
+    name: "Ye Guesser",
     short_name: "Ye Guesser",
     description:
       "Test your Kanye West music knowledge! Listen to track previews and guess the song title.",
