@@ -8,15 +8,17 @@ type AudioPlayerProps = {
   audiosrc: string;
   time: number;
   autoPlay?: boolean;
+  dayNumber: number;
 };
 
-function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
+function AudioPlayer({ audiosrc, time, autoPlay = false, dayNumber }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const hasAttemptedAutoPlay = useRef(false);
+  const [currentPreviewUrl, setCurrentPreviewUrl] = useState(audiosrc);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -67,12 +69,35 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
     };
   }, [audiosrc]);
 
-  const playAudio = useCallback(() => {
+  const playAudio = useCallback(async () => {
     const audio = audioRef.current;
     if (!audio || isPlaying) return;
 
-    console.log("Attempting to play audio:", audiosrc);
+    console.log("Attempting to play audio:", currentPreviewUrl);
     setError(false);
+    
+    try {
+      // Fetch fresh preview URL
+      const res = await fetch("/api/get-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dayNumber }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch preview URL");
+      }
+
+      const { preview } = await res.json();
+      setCurrentPreviewUrl(preview);
+      
+      // Update audio source with fresh URL
+      audio.src = preview;
+    } catch (err) {
+      console.error("Failed to fetch fresh preview URL:", err);
+      setError(true);
+      return;
+    }
     
     // Load the audio on user interaction for mobile Safari
     if (audio.readyState < 2) {
@@ -105,19 +130,19 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
             console.log("Autoplay blocked - user interaction required");
             setIsPlaying(false);
           } else if (err.name === 'NotSupportedError') {
-            console.error("Audio format not supported:", audiosrc);
+            console.error("Audio format not supported:", currentPreviewUrl);
             setError(true);
             setIsPlaying(false);
           } else {
             console.error("Failed to play audio:", err);
             console.error("Error name:", err.name);
-            console.error("Audio source:", audiosrc);
+            console.error("Audio source:", currentPreviewUrl);
             setError(true);
             setIsPlaying(false);
           }
         });
     }
-  }, [time, isPlaying, audiosrc]);
+  }, [time, isPlaying, currentPreviewUrl, dayNumber]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -144,7 +169,7 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
     <div className="flex flex-col items-center gap-1.5">
       <audio
         ref={audioRef}
-        src={audiosrc}
+        src={currentPreviewUrl}
         preload="none"
         playsInline
         crossOrigin="anonymous"

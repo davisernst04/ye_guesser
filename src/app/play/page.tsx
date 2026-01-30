@@ -286,6 +286,7 @@ export default function PlayPage() {
           audiosrc={gameState.preview}
           time={gameState.isCompleted || gameState.isFailed ? 30 : currentTime}
           autoPlay={gameState.isCompleted || gameState.isFailed}
+          dayNumber={gameState.dayNumber}
         />
         <Combobox
           onGuess={handleGuess}
