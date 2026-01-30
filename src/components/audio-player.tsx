@@ -142,7 +142,7 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
     <div className="flex flex-col items-center gap-1.5">
       <audio
         ref={audioRef}
-        src={audiosrc}
+        src={`/api/audio-proxy?url=${encodeURIComponent(audiosrc)}`}
         preload="none"
         playsInline
       >
