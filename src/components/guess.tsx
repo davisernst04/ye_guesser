@@ -33,7 +33,7 @@ type Props = {
   disabled?: boolean;
 };
 
-export function ComboboxDemo({ onGuess, disabled = false }: Props) {
+export function Combobox({ onGuess, disabled = false }: Props) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
   const [input, setInput] = useState("");

@@ -1,25 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import dynamic from "next/dynamic";
 import Image from "next/image";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-
-const AudioPlayer = dynamic(() => import("@/components/audio-player"), {
-  ssr: false,
-  loading: () => <div className="h-9 w-9 animate-pulse bg-gray-200 rounded" />,
-});
-
-const ComboboxDemo = dynamic(
-  () =>
-    import("@/components/guess").then((mod) => ({ default: mod.ComboboxDemo })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-9 w-48 animate-pulse bg-gray-200 rounded" />
-    ),
-  },
-);
+import AudioPlayer from "@/components/audio-player";
+import { Combobox } from "@/components/guess";
 
 type Track = {
   preview: string;
@@ -297,13 +282,13 @@ export default function PlayPage() {
       )}
 
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4">
-        <AudioPlayer 
-          audiosrc={gameState.preview} 
+        <AudioPlayer
+          audiosrc={gameState.preview}
           time={gameState.isCompleted || gameState.isFailed ? 30 : currentTime}
           autoPlay={gameState.isCompleted || gameState.isFailed}
         />
-        <ComboboxDemo 
-          onGuess={handleGuess} 
+        <Combobox
+          onGuess={handleGuess}
           disabled={gameState.isCompleted || gameState.isFailed}
         />
       </div>
