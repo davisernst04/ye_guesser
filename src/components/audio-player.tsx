@@ -18,7 +18,7 @@ function AudioPlayer({ audiosrc, time, autoPlay = false, dayNumber }: AudioPlaye
   const [error, setError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const hasAttemptedAutoPlay = useRef(false);
-  const [currentPreviewUrl, setCurrentPreviewUrl] = useState(audiosrc);
+  const [currentPreviewUrl, setCurrentPreviewUrl] = useState("");
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -169,7 +169,7 @@ function AudioPlayer({ audiosrc, time, autoPlay = false, dayNumber }: AudioPlaye
     <div className="flex flex-col items-center gap-1.5">
       <audio
         ref={audioRef}
-        src={currentPreviewUrl}
+        src={currentPreviewUrl || undefined}
         preload="none"
         playsInline
         crossOrigin="anonymous"
