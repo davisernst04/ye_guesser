@@ -7,9 +7,10 @@ import { Play, AudioLines, AlertCircle } from "lucide-react";
 type AudioPlayerProps = {
   audiosrc: string;
   time: number;
+  autoPlay?: boolean;
 };
 
-function AudioPlayer({ audiosrc, time }: AudioPlayerProps) {
+function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -24,6 +25,10 @@ function AudioPlayer({ audiosrc, time }: AudioPlayerProps) {
       console.log("Audio can play:", audiosrc);
       setIsLoaded(true);
       setError(false);
+      
+      if (autoPlay) {
+        playAudio();
+      }
     };
 
     const handleError = (e: Event) => {
@@ -41,7 +46,7 @@ function AudioPlayer({ audiosrc, time }: AudioPlayerProps) {
       audio.removeEventListener("canplay", handleCanPlay);
       audio.removeEventListener("error", handleError);
     };
-  }, [audiosrc]);
+  }, [audiosrc, autoPlay]);
 
   const playAudio = useCallback(() => {
     const audio = audioRef.current;

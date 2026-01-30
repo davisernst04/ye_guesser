@@ -39,7 +39,7 @@ function HomePage() {
       </header>
 
       <div className="relative z-20 flex flex-wrap items-center justify-center gap-4 mt-6 sm:mt-8">
-        <Button asChild variant="default" size="lg" className="w-48">
+        <Button asChild variant="default" size="lg" className="w-48 bg-primary">
           <Link href="/play" prefetch={true}>
             PLAY / NOW
           </Link>

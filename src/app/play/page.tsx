@@ -267,12 +267,17 @@ export default function PlayPage() {
         </div>
       )}
 
-      {!gameState.isCompleted && !gameState.isFailed && (
-        <div className="flex items-center justify-center gap-3 sm:gap-4 px-4">
-          <AudioPlayer audiosrc={gameState.track.preview} time={currentTime} />
-          <ComboboxDemo onGuess={handleGuess} />
-        </div>
-      )}
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4">
+        <AudioPlayer 
+          audiosrc={gameState.track.preview} 
+          time={gameState.isCompleted || gameState.isFailed ? 30 : currentTime}
+          autoPlay={gameState.isCompleted || gameState.isFailed}
+        />
+        <ComboboxDemo 
+          onGuess={handleGuess} 
+          disabled={gameState.isCompleted || gameState.isFailed}
+        />
+      </div>
 
       {gameState.guesses.length > 0 && (
         <div className="flex justify-center px-4">
