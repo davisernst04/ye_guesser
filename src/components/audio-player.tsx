@@ -35,13 +35,14 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
         console.error("Audio error code:", audioElement.error.code);
         console.error("Audio error message:", audioElement.error.message);
       }
-      setError(true);
+      // Don't set error on initial load, only on play failure
       setIsLoaded(false);
     };
 
     const handleLoadedMetadata = () => {
       console.log("Audio metadata loaded");
       setIsLoaded(true);
+      setError(false);
     };
 
     const handleLoadedData = () => {
@@ -55,7 +56,8 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
     audio.addEventListener("loadeddata", handleLoadedData);
     audio.addEventListener("error", handleError);
 
-    audio.load();
+    // Don't preload, let user interaction trigger load
+    // audio.load();
 
     return () => {
       audio.removeEventListener("canplay", handleCanPlay);
@@ -142,9 +144,10 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
     <div className="flex flex-col items-center gap-1.5">
       <audio
         ref={audioRef}
-        src={`/api/audio-proxy?url=${encodeURIComponent(audiosrc)}`}
+        src={audiosrc}
         preload="none"
         playsInline
+        crossOrigin="anonymous"
       >
         <track kind="captions" />
       </audio>
@@ -153,31 +156,18 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
         className="cursor-pointer"
         variant="outline"
         size="icon"
-        disabled={isPlaying || error}
+        disabled={isPlaying}
         aria-label={isPlaying ? "Playing audio preview" : "Play audio preview"}
-        title={
-          error
-            ? "Failed to load audio"
-            : isPlaying
-              ? "Playing..."
-              : isLoaded
-                ? "Play preview"
-                : "Loading..."
-        }
+        title={isPlaying ? "Playing..." : "Play preview"}
       >
         {isPlaying ? (
           <AudioLines className="h-4 w-4 animate-pulse" />
-        ) : error ? (
-          <AlertCircle className="h-4 w-4 text-red-500" />
         ) : (
           <Play className="h-4 w-4" />
         )}
       </Button>
       {error && (
-        <p className="text-xs text-red-500 text-center">Failed to load audio preview</p>
-      )}
-      {!isLoaded && !error && (
-        <p className="text-xs text-muted-foreground text-center">Loading audio...</p>
+        <p className="text-xs text-red-500 text-center">Audio unavailable</p>
       )}
     </div>
   );
