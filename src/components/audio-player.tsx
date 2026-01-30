@@ -28,8 +28,13 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
       setError(false);
     };
 
-    const handleError = (e: Event) => {
+    const handleError = (e: ErrorEvent | Event) => {
       console.error("Audio load error:", e, audiosrc);
+      const audioElement = e.target as HTMLAudioElement;
+      if (audioElement?.error) {
+        console.error("Audio error code:", audioElement.error.code);
+        console.error("Audio error message:", audioElement.error.message);
+      }
       setError(true);
       setIsLoaded(false);
     };
@@ -39,8 +44,15 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
       setIsLoaded(true);
     };
 
+    const handleLoadedData = () => {
+      console.log("Audio data loaded");
+      setIsLoaded(true);
+      setError(false);
+    };
+
     audio.addEventListener("canplay", handleCanPlay);
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("loadeddata", handleLoadedData);
     audio.addEventListener("error", handleError);
 
     audio.load();
@@ -48,6 +60,7 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
     return () => {
       audio.removeEventListener("canplay", handleCanPlay);
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("loadeddata", handleLoadedData);
       audio.removeEventListener("error", handleError);
     };
   }, [audiosrc]);
@@ -58,6 +71,11 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
 
     console.log("Attempting to play audio:", audiosrc);
     setError(false);
+    
+    // Load the audio on user interaction for mobile Safari
+    if (audio.readyState < 2) {
+      audio.load();
+    }
     
     // Reset audio before playing
     audio.currentTime = 0;
@@ -70,6 +88,7 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
       playPromise
         .then(() => {
           console.log("Audio playing successfully");
+          setIsLoaded(true);
           timeoutRef.current = setTimeout(() => {
             if (audio) {
               audio.pause();
@@ -82,12 +101,18 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
         .catch((err) => {
           if (err.name === 'NotAllowedError') {
             console.log("Autoplay blocked - user interaction required");
+            setIsPlaying(false);
+          } else if (err.name === 'NotSupportedError') {
+            console.error("Audio format not supported:", audiosrc);
+            setError(true);
+            setIsPlaying(false);
           } else {
             console.error("Failed to play audio:", err);
+            console.error("Error name:", err.name);
             console.error("Audio source:", audiosrc);
             setError(true);
+            setIsPlaying(false);
           }
-          setIsPlaying(false);
         });
     }
   }, [time, isPlaying, audiosrc]);
@@ -118,9 +143,8 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
       <audio
         ref={audioRef}
         src={audiosrc}
-        preload="metadata"
+        preload="none"
         playsInline
-        crossOrigin="anonymous"
       >
         <track kind="captions" />
       </audio>
