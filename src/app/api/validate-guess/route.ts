@@ -98,6 +98,10 @@ export async function POST(request: Request) {
     const trackIndex = Math.floor(seededRandom(dayNumber) * allTracks.length);
     const dailyTrack = allTracks[trackIndex];
 
+    if (!dailyTrack) {
+      throw new Error("Failed to get daily track");
+    }
+
     const isCorrect = guess.toLowerCase() === dailyTrack.title.toLowerCase();
 
     return NextResponse.json({

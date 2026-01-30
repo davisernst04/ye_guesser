@@ -26,9 +26,13 @@ const EXCLUDE_TRACKS: readonly number[] = [
 
 function getDayNumber(): number {
   const now = new Date();
-  const utcDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const utcDate = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
   const epoch = new Date(Date.UTC(2026, 0, 1));
-  const daysSinceEpoch = Math.floor((utcDate.getTime() - epoch.getTime()) / (1000 * 60 * 60 * 24));
+  const daysSinceEpoch = Math.floor(
+    (utcDate.getTime() - epoch.getTime()) / (1000 * 60 * 60 * 24),
+  );
   return daysSinceEpoch;
 }
 
@@ -44,17 +48,14 @@ export async function POST(request: Request) {
     const { dayNumber } = await request.json();
 
     if (typeof dayNumber !== "number") {
-      return NextResponse.json(
-        { error: "Invalid request" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
     const currentDay = getDayNumber();
     if (dayNumber !== currentDay) {
       return NextResponse.json(
         { error: "Invalid day number" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -97,6 +98,10 @@ export async function POST(request: Request) {
 
     const trackIndex = Math.floor(seededRandom(dayNumber) * allTracks.length);
     const dailyTrack = allTracks[trackIndex];
+
+    if (!dailyTrack) {
+      throw new Error("Failed to get daily track");
+    }
 
     return NextResponse.json({
       title: dailyTrack.title,

@@ -89,6 +89,10 @@ export async function GET() {
     const trackIndex = Math.floor(seededRandom(dayNumber) * allTracks.length);
     const dailyTrack = allTracks[trackIndex];
 
+    if (!dailyTrack) {
+      throw new Error("Failed to get daily track");
+    }
+
     return NextResponse.json({ 
       preview: dailyTrack.preview,
       dayNumber 
