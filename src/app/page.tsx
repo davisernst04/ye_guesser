@@ -48,7 +48,7 @@ function HomePage() {
 
       <div className="absolute inset-0 z-10 h-full w-full bg-black/60 dark:bg-black/40" />
       <ThreeDMarquee
-        className="pointer-events-none absolute inset-0 h-full w-full z-0"
+        className="pointer-events-none absolute inset-0 h-full w-full z-0 "
         images={MARQUEE_IMAGES}
       />
     </div>

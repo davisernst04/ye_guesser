@@ -34,13 +34,20 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
       setIsLoaded(false);
     };
 
+    const handleLoadedMetadata = () => {
+      console.log("Audio metadata loaded");
+      setIsLoaded(true);
+    };
+
     audio.addEventListener("canplay", handleCanPlay);
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
     audio.addEventListener("error", handleError);
 
     audio.load();
 
     return () => {
       audio.removeEventListener("canplay", handleCanPlay);
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
       audio.removeEventListener("error", handleError);
     };
   }, [audiosrc]);
@@ -51,6 +58,10 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
 
     console.log("Attempting to play audio:", audiosrc);
     setError(false);
+    
+    // Reset audio before playing
+    audio.currentTime = 0;
+    
     setIsPlaying(true);
 
     const playPromise = audio.play();
@@ -107,7 +118,8 @@ function AudioPlayer({ audiosrc, time, autoPlay = false }: AudioPlayerProps) {
       <audio
         ref={audioRef}
         src={audiosrc}
-        preload="auto"
+        preload="metadata"
+        playsInline
         crossOrigin="anonymous"
       >
         <track kind="captions" />
