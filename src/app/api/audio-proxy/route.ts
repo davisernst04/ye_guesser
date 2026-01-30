@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Validate it's a Deezer URL
-    if (!url.startsWith("https://cdns-preview-") && !url.startsWith("https://cdnt-preview-")) {
+    if (!url.startsWith("https://cdns-preview") && !url.startsWith("https://cdnt-preview")) {
       return NextResponse.json(
         { error: "Invalid URL source" },
         { status: 400 }
