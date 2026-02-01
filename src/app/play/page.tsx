@@ -101,17 +101,34 @@ export default function PlayPage() {
         if (typeof parsedState.currentGuessNumber !== "number") {
           parsedState.currentGuessNumber = parsedState.guesses?.length || 0;
         }
-
         if (typeof parsedState.isFailed !== "boolean") {
           parsedState.isFailed = false;
         }
-
         if (typeof parsedState.dayNumber !== "number") {
           parsedState.dayNumber = currentDay;
         }
 
         setGameState(parsedState);
         setIsLoading(false);
+
+        fetch("/api/get-preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dayNumber: parsedState.dayNumber }),
+        })
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (data && data.preview && data.preview !== parsedState.preview) {
+              console.log("Refreshed expired preview URL");
+              setGameState((prev) => {
+                if (!prev) return null;
+                const newState = { ...prev, preview: data.preview };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+                return newState;
+              });
+            }
+          })
+          .catch((e) => console.error("Failed to refresh stale URL:", e));
       } catch {
         startNewGame();
       }

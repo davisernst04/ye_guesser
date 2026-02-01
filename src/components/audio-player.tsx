@@ -87,8 +87,7 @@ function AudioPlayer({
         .catch((err) => {
           console.error("Playback failed:", err);
           setIsPlaying(false);
-          if (err.name === "NotAllowedError") {
-          } else {
+          if (err.name !== "AbortError") {
             setError(true);
           }
         });
