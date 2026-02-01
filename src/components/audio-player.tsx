@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useRef, useState, useCallback, useEffect, memo } from "react";
-import { Play, AudioLines, AlertCircle } from "lucide-react";
+import { Play, AudioLines } from "lucide-react";
 
 type AudioPlayerProps = {
   audiosrc: string;
@@ -11,164 +11,98 @@ type AudioPlayerProps = {
   dayNumber: number;
 };
 
-function AudioPlayer({ audiosrc, time, autoPlay = false, dayNumber }: AudioPlayerProps) {
+function AudioPlayer({
+  audiosrc,
+  time,
+  autoPlay = false,
+  dayNumber,
+}: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const hasAttemptedAutoPlay = useRef(false);
-  const [currentPreviewUrl, setCurrentPreviewUrl] = useState("");
+
+  const currentPreviewUrl = audiosrc
+    ? `/api/audio-proxy?url=${encodeURIComponent(audiosrc)}`
+    : undefined;
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     const handleCanPlay = () => {
-      console.log("Audio can play:", audiosrc);
       setIsLoaded(true);
       setError(false);
     };
 
     const handleError = (e: ErrorEvent | Event) => {
-      console.error("Audio load error:", e, audiosrc);
-      const audioElement = e.target as HTMLAudioElement;
-      if (audioElement?.error) {
-        console.error("Audio error code:", audioElement.error.code);
-        console.error("Audio error message:", audioElement.error.message);
-      }
-      // Don't set error on initial load, only on play failure
+      console.error("Audio load error:", e);
       setIsLoaded(false);
+      if (isPlaying) setError(true);
     };
 
-    const handleLoadedMetadata = () => {
-      console.log("Audio metadata loaded");
-      setIsLoaded(true);
-      setError(false);
-    };
-
-    const handleLoadedData = () => {
-      console.log("Audio data loaded");
-      setIsLoaded(true);
-      setError(false);
-    };
+    setIsLoaded(false);
+    setError(false);
+    setIsPlaying(false);
 
     audio.addEventListener("canplay", handleCanPlay);
-    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
-    audio.addEventListener("loadeddata", handleLoadedData);
     audio.addEventListener("error", handleError);
 
-    // Don't preload, let user interaction trigger load
-    // audio.load();
+    if (currentPreviewUrl) {
+      audio.load();
+    }
 
     return () => {
       audio.removeEventListener("canplay", handleCanPlay);
-      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      audio.removeEventListener("loadeddata", handleLoadedData);
       audio.removeEventListener("error", handleError);
     };
-  }, [audiosrc]);
+  }, [currentPreviewUrl]);
 
-  const playAudio = useCallback(async () => {
+  const playAudio = useCallback(() => {
     const audio = audioRef.current;
-    if (!audio || isPlaying) return;
+    if (!audio || isPlaying || !currentPreviewUrl) return;
 
     setError(false);
-    setIsPlaying(true);
-    
-    try {
-      // Fetch fresh preview URL
-      console.log("Fetching fresh preview URL...");
-      const res = await fetch("/api/get-preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dayNumber }),
-      });
 
-      if (!res.ok) {
-        throw new Error("Failed to fetch preview URL");
-      }
+    const playPromise = audio.play();
 
-      const { preview } = await res.json();
-      console.log("Got fresh preview URL:", preview);
-      setCurrentPreviewUrl(preview);
-      
-      // Update audio source with fresh URL
-      audio.src = preview;
-      
-      // Load the audio
-      audio.load();
-      
-      // Wait for audio to be ready
-      await new Promise<void>((resolve, reject) => {
-        const onCanPlay = () => {
-          audio.removeEventListener("canplay", onCanPlay);
-          audio.removeEventListener("error", onError);
-          resolve();
-        };
-        
-        const onError = () => {
-          audio.removeEventListener("canplay", onCanPlay);
-          audio.removeEventListener("error", onError);
-          reject(new Error("Failed to load audio"));
-        };
-        
-        audio.addEventListener("canplay", onCanPlay);
-        audio.addEventListener("error", onError);
-      });
-      
-      // Reset audio before playing
-      audio.currentTime = 0;
-      
-      console.log("Attempting to play audio:", preview);
-      const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          setIsPlaying(true);
+          setIsLoaded(true);
 
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            console.log("Audio playing successfully");
-            setIsLoaded(true);
-            timeoutRef.current = setTimeout(() => {
-              if (audio) {
-                audio.pause();
-                audio.currentTime = 0;
-                setIsPlaying(false);
-                console.log("Audio stopped after", time, "seconds");
-              }
-            }, time * 1000);
-          })
-          .catch((err) => {
-            if (err.name === 'NotAllowedError') {
-              console.log("Autoplay blocked - user interaction required");
-            } else if (err.name === 'NotSupportedError') {
-              console.error("Audio format not supported");
-              setError(true);
-            } else if (err.name !== 'AbortError') {
-              console.error("Failed to play audio:", err);
-              console.error("Error name:", err.name);
-              setError(true);
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+          timeoutRef.current = setTimeout(() => {
+            if (audio) {
+              audio.pause();
+              audio.currentTime = 0;
+              setIsPlaying(false);
             }
-            setIsPlaying(false);
-          });
-      }
-    } catch (err) {
-      console.error("Failed to fetch or load preview:", err);
-      setError(true);
-      setIsPlaying(false);
+          }, time * 1000);
+        })
+        .catch((err) => {
+          console.error("Playback failed:", err);
+          setIsPlaying(false);
+          if (err.name === "NotAllowedError") {
+          } else {
+            setError(true);
+          }
+        });
     }
-  }, [time, isPlaying, dayNumber]);
+  }, [time, isPlaying, currentPreviewUrl]);
 
   useEffect(() => {
-    const audio = audioRef.current;
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
-      if (audio) {
-        audio.pause();
-        audio.currentTime = 0;
+      if (audioRef.current) {
+        audioRef.current.pause();
       }
-      hasAttemptedAutoPlay.current = false;
     };
   }, []);
 
@@ -177,14 +111,18 @@ function AudioPlayer({ audiosrc, time, autoPlay = false, dayNumber }: AudioPlaye
       hasAttemptedAutoPlay.current = true;
       playAudio();
     }
-  }, [autoPlay, isLoaded, isPlaying]);
+  }, [autoPlay, isLoaded, isPlaying, playAudio]);
+
+  useEffect(() => {
+    hasAttemptedAutoPlay.current = false;
+  }, [audiosrc]);
 
   return (
     <div className="flex flex-col items-center gap-1.5">
       <audio
         ref={audioRef}
-        src={currentPreviewUrl || undefined}
-        preload="none"
+        src={currentPreviewUrl}
+        preload="auto"
         playsInline
         crossOrigin="anonymous"
       >
@@ -195,7 +133,7 @@ function AudioPlayer({ audiosrc, time, autoPlay = false, dayNumber }: AudioPlaye
         className="cursor-pointer"
         variant="outline"
         size="icon"
-        disabled={isPlaying}
+        disabled={isPlaying || !currentPreviewUrl}
         aria-label={isPlaying ? "Playing audio preview" : "Play audio preview"}
         title={isPlaying ? "Playing..." : "Play preview"}
       >
