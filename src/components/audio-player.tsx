@@ -66,6 +66,8 @@ function AudioPlayer({
 
     setError(false);
 
+    audio.load();
+
     const playPromise = audio.play();
 
     if (playPromise !== undefined) {

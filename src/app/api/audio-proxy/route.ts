@@ -40,25 +40,27 @@ export async function GET(request: NextRequest) {
     }
 
     const responseHeaders = new Headers();
-    responseHeaders.set(
-      "Content-Type",
-      response.headers.get("Content-Type") || "audio/mpeg",
-    );
+
+    const safeHeaders = [
+      "content-type",
+      "content-length",
+      "content-range",
+      "cache-control",
+      "last-modified",
+      "etag",
+    ];
+
+    response.headers.forEach((value, key) => {
+      if (safeHeaders.includes(key.toLowerCase())) {
+        responseHeaders.set(key, value);
+      }
+    });
+
     responseHeaders.set("Access-Control-Allow-Origin", "*");
-    responseHeaders.set("Cache-Control", "public, max-age=3600");
     responseHeaders.set("Accept-Ranges", "bytes");
 
-    if (response.headers.has("Content-Length")) {
-      responseHeaders.set(
-        "Content-Length",
-        response.headers.get("Content-Length")!,
-      );
-    }
-    if (response.headers.has("Content-Range")) {
-      responseHeaders.set(
-        "Content-Range",
-        response.headers.get("Content-Range")!,
-      );
+    if (!responseHeaders.has("content-type")) {
+      responseHeaders.set("Content-Type", "audio/mpeg");
     }
 
     return new NextResponse(response.body, {
