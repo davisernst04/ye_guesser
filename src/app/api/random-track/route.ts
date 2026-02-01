@@ -26,9 +26,13 @@ const EXCLUDE_TRACKS: readonly number[] = [
 
 function getDayNumber(): number {
   const now = new Date();
-  const utcDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const epoch = new Date(Date.UTC(2026, 0, 1)); // January 1, 2026
-  const daysSinceEpoch = Math.floor((utcDate.getTime() - epoch.getTime()) / (1000 * 60 * 60 * 24));
+  const utcDate = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+  const epoch = new Date(Date.UTC(2026, 0, 1));
+  const daysSinceEpoch = Math.floor(
+    (utcDate.getTime() - epoch.getTime()) / (1000 * 60 * 60 * 24),
+  );
   return daysSinceEpoch;
 }
 
@@ -38,12 +42,12 @@ function seededRandom(seed: number): number {
 }
 
 export const runtime = "edge";
-export const revalidate = 86400;
+export const revalidate = 0;
 
 export async function GET() {
   try {
     const albumRes = await fetch("https://api.deezer.com/artist/230/albums", {
-      next: { revalidate: 86400 },
+      cache: "no-store",
     });
 
     if (!albumRes.ok) {
@@ -59,7 +63,7 @@ export async function GET() {
     const trackPromises = filteredAlbums.map(async (album) => {
       try {
         const res = await fetch(album.tracklist, {
-          next: { revalidate: 86400 },
+          cache: "no-store",
         });
 
         if (!res.ok) {
@@ -93,9 +97,9 @@ export async function GET() {
       throw new Error("Failed to get daily track");
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       preview: dailyTrack.preview,
-      dayNumber 
+      dayNumber,
     });
   } catch (error) {
     console.error(

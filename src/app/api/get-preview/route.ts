@@ -26,9 +26,13 @@ const EXCLUDE_TRACKS: readonly number[] = [
 
 function getDayNumber(): number {
   const now = new Date();
-  const utcDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const utcDate = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
   const epoch = new Date(Date.UTC(2026, 0, 1));
-  const daysSinceEpoch = Math.floor((utcDate.getTime() - epoch.getTime()) / (1000 * 60 * 60 * 24));
+  const daysSinceEpoch = Math.floor(
+    (utcDate.getTime() - epoch.getTime()) / (1000 * 60 * 60 * 24),
+  );
   return daysSinceEpoch;
 }
 
@@ -44,22 +48,19 @@ export async function POST(request: Request) {
     const { dayNumber } = await request.json();
 
     if (typeof dayNumber !== "number") {
-      return NextResponse.json(
-        { error: "Invalid request" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
     const currentDay = getDayNumber();
     if (dayNumber !== currentDay) {
       return NextResponse.json(
         { error: "Invalid day number" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const albumRes = await fetch("https://api.deezer.com/artist/230/albums", {
-      next: { revalidate: 86400 },
+      cache: "no-store",
     });
 
     if (!albumRes.ok) {
@@ -74,12 +75,10 @@ export async function POST(request: Request) {
     const trackPromises = filteredAlbums.map(async (album) => {
       try {
         const res = await fetch(album.tracklist, {
-          next: { revalidate: 86400 },
+          cache: "no-store",
         });
 
-        if (!res.ok) {
-          return [];
-        }
+        if (!res.ok) return [];
 
         const { data: trackData } = (await res.json()) as { data: Track[] };
         return trackData.filter((track) => !EXCLUDE_TRACKS.includes(track.id));
@@ -106,13 +105,10 @@ export async function POST(request: Request) {
       preview: dailyTrack.preview,
     });
   } catch (error) {
-    console.error(
-      "Error in get-preview API:",
-      error instanceof Error ? error.message : "Unknown error",
-    );
+    console.error("Error in get-preview API:", error);
     return NextResponse.json(
       { error: "Failed to get preview URL" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
