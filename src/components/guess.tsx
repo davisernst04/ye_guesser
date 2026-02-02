@@ -31,9 +31,10 @@ type TrackOption = {
 type Props = {
   onGuess: (guess: string) => void;
   disabled?: boolean;
+  className?: string;
 };
 
-export function Combobox({ onGuess, disabled = false }: Props) {
+export function Combobox({ onGuess, disabled = false, className }: Props) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
   const [input, setInput] = useState("");
@@ -98,16 +99,19 @@ export function Combobox({ onGuess, disabled = false }: Props) {
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-full sm:w-[200px] justify-between",
-            disabled && "opacity-50 cursor-not-allowed"
+            "w-full justify-between",
+            disabled && "opacity-50 cursor-not-allowed",
+            className
           )}
           disabled={isLoading || disabled}
         >
-          {value || (isLoading ? "Loading..." : "Select a track")}
-          <ChevronsUpDown className="opacity-50" />
+          <span className="truncate">
+            {value || (isLoading ? "Loading..." : "Select a track")}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[calc(100vw-2rem)] sm:w-[200px] p-0">
+      <PopoverContent className="w-[200px] p-0" style={{ width: "var(--radix-popover-trigger-width)" }}>
         <Command>
           <CommandInput
             placeholder="Search for a track"

@@ -304,17 +304,20 @@ export default function PlayPage() {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4">
-        <AudioPlayer
-          audiosrc={gameState.preview}
-          time={gameState.isCompleted || gameState.isFailed ? 30 : currentTime}
-          autoPlay={shouldAutoPlay}
-          dayNumber={gameState.dayNumber}
-        />
-        <Combobox
-          onGuess={handleGuess}
-          disabled={gameState.isCompleted || gameState.isFailed}
-        />
+      <div className="flex justify-center px-4">
+        <div className="flex flex-row items-center gap-3 w-full max-w-[280px] sm:max-w-xs">
+          <AudioPlayer
+            audiosrc={gameState.preview}
+            time={gameState.isCompleted || gameState.isFailed ? 30 : currentTime}
+            autoPlay={shouldAutoPlay}
+            dayNumber={gameState.dayNumber}
+          />
+          <Combobox
+            onGuess={handleGuess}
+            disabled={gameState.isCompleted || gameState.isFailed}
+            className="flex-1 min-w-0"
+          />
+        </div>
       </div>
 
       {gameState.guesses.length > 0 && (
