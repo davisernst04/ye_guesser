@@ -25,9 +25,7 @@ function AudioPlayer({
   const [isLoaded, setIsLoaded] = useState(false);
   const hasAttemptedAutoPlay = useRef(false);
 
-  const currentPreviewUrl = audiosrc
-    ? `/api/audio-proxy?url=${encodeURIComponent(audiosrc)}`
-    : undefined;
+  const currentPreviewUrl = audiosrc;
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -129,10 +127,7 @@ function AudioPlayer({
         src={currentPreviewUrl}
         preload="auto"
         playsInline
-        crossOrigin="anonymous"
-      >
-        <track kind="captions" />
-      </audio>
+      />
       <Button
         onClick={playAudio}
         className="cursor-pointer"
