@@ -48,11 +48,13 @@ export default function PlayPage() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
 
   const startNewGame = useCallback(async () => {
     try {
       setError(null);
       setIsLoading(true);
+      setShouldAutoPlay(false);
 
       localStorage.removeItem(STORAGE_KEY);
 
@@ -181,6 +183,10 @@ export default function PlayPage() {
           }
         }
 
+        if (isCorrect || hasFailed) {
+          setShouldAutoPlay(true);
+        }
+
         setGameState(updatedState);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedState));
       } catch (err) {
@@ -302,7 +308,7 @@ export default function PlayPage() {
         <AudioPlayer
           audiosrc={gameState.preview}
           time={gameState.isCompleted || gameState.isFailed ? 30 : currentTime}
-          autoPlay={gameState.isCompleted || gameState.isFailed}
+          autoPlay={shouldAutoPlay}
           dayNumber={gameState.dayNumber}
         />
         <Combobox
