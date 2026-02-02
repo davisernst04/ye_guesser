@@ -43,7 +43,6 @@ export async function GET(request: NextRequest) {
 
     const safeHeaders = [
       "content-type",
-      "content-length",
       "content-range",
       "cache-control",
       "last-modified",

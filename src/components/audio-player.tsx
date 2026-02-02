@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useRef, useState, useCallback, useEffect, memo } from "react";
-import { Play, AudioLines } from "lucide-react";
+import { Play, AudioLines, Loader2 } from "lucide-react";
 
 type AudioPlayerProps = {
   audiosrc: string;
@@ -20,6 +20,7 @@ function AudioPlayer({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
   const [error, setError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const hasAttemptedAutoPlay = useRef(false);
@@ -67,10 +68,12 @@ function AudioPlayer({
     setError(false);
 
     const playPromise = audio.play();
+    setIsBuffering(true);
 
     if (playPromise !== undefined) {
       playPromise
         .then(() => {
+          setIsBuffering(false);
           setIsPlaying(true);
           setIsLoaded(true);
 
@@ -86,11 +89,14 @@ function AudioPlayer({
         })
         .catch((err) => {
           console.error("Playback failed:", err);
+          setIsBuffering(false);
           setIsPlaying(false);
           if (err.name !== "AbortError") {
             setError(true);
           }
         });
+    } else {
+      setIsBuffering(false);
     }
   }, [time, isPlaying, currentPreviewUrl]);
 
@@ -132,11 +138,13 @@ function AudioPlayer({
         className="cursor-pointer"
         variant="outline"
         size="icon"
-        disabled={isPlaying || !currentPreviewUrl}
+        disabled={isPlaying || isBuffering || !currentPreviewUrl}
         aria-label={isPlaying ? "Playing audio preview" : "Play audio preview"}
         title={isPlaying ? "Playing..." : "Play preview"}
       >
-        {isPlaying ? (
+        {isBuffering ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : isPlaying ? (
           <AudioLines className="h-4 w-4 animate-pulse" />
         ) : (
           <Play className="h-4 w-4" />
