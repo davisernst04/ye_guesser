@@ -1,32 +1,58 @@
 # Ye Guesser
 
-A wordle-like game for guessing Ye tracks with audio snippets. Every guess increases the snippet length until you guess the correct track or run out of attempts.
+Browser game inspired by Wordle, built around identifying Kanye West tracks from short audio clips. Each incorrect guess reveals a longer portion of the snippet until the player either identifies the song or runs out of attempts.
 
-## Installation
+## Overview
+
+Ye Guesser is a lightweight music guessing game with a simple loop:
+
+- hear a short audio sample
+- submit a track guess
+- unlock a longer snippet after each incorrect attempt
+- continue until the track is identified or attempts are exhausted
+
+## Stack
+
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- Radix UI
+
+## Development
+
+### Install dependencies
 
 ```bash
 npm install
 ```
 
-## Development
+### Start the development server
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open `http://localhost:3000` in your browser.
 
-## Build
+## Production
 
 ```bash
 npm run build
 npm start
 ```
 
-### Environment Variables
-No environment variables required - uses public Deezer API.
+## Scripts
+
+- `npm run dev` - start the development server
+- `npm run build` - build for production
+- `npm run start` - run the production build
+- `npm run lint` - run linting
+
+## Data and APIs
+
+The project does not require local environment variables for basic development. It relies on publicly accessible music metadata and preview sources.
 
 ## License
 
 MIT
-
