@@ -56,3 +56,10 @@ The project does not require local environment variables for basic development. 
 ## License
 
 MIT
+
+## Vercel deployment
+
+Deploy the repository root using the Next.js preset. Install with `npm ci` and
+build with `npm run build`. The homepage and play screen do not require account
+credentials. Music metadata, cover art, and audio previews rely on external
+providers; their availability is separate from deployment success.

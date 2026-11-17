@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
@@ -87,6 +89,7 @@ export default function PlayPage() {
     }
   }, []);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- Restore browser-only localStorage state after hydration. */
   useEffect(() => {
     const currentDay = getCurrentDayNumber();
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -138,6 +141,7 @@ export default function PlayPage() {
       startNewGame();
     }
   }, [startNewGame]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleGuess = useCallback(
     async (guess: string) => {
@@ -158,7 +162,7 @@ export default function PlayPage() {
         const newGuessNumber = gameState.currentGuessNumber + 1;
         const hasFailed = !isCorrect && newGuessNumber >= MAX_GUESSES;
 
-        let updatedState: GameState = {
+        const updatedState: GameState = {
           ...gameState,
           guesses: [...gameState.guesses, guess],
           isCompleted: isCorrect,
@@ -195,6 +199,17 @@ export default function PlayPage() {
     },
     [gameState],
   );
+
+  if (error && !isLoading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center p-4 sm:p-6">
+        <div className="text-center space-y-4">
+          <p role="alert">{error}. Please try again.</p>
+          <Button onClick={startNewGame}>Try Again</Button>
+        </div>
+      </main>
+    );
+  }
 
   if (isLoading || !gameState) {
     return (
