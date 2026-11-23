@@ -2,6 +2,7 @@
 
 import { ThreeDMarquee } from "@/components/ui/3d-marquee";
 import { Button } from "@/components/ui/button";
+import { FanNote } from "@/components/fan-note";
 import Link from "next/link";
 import { memo } from "react";
 
@@ -44,7 +45,12 @@ function HomePage() {
             PLAY / NOW
           </Link>
         </Button>
+        <Button asChild variant="secondary" size="lg" className="w-48">
+          <Link href="/practice">PRACTICE</Link>
+        </Button>
       </div>
+
+      <FanNote className="absolute bottom-0 z-20 text-white/70" />
 
       <div className="absolute inset-0 z-10 h-full w-full bg-black/60 dark:bg-black/40" />
       <ThreeDMarquee

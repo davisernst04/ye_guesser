@@ -1,155 +1,112 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+import { Loader2, Play, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useRef, useState, useCallback, useEffect, memo } from "react";
-import { Play, AudioLines, Loader2 } from "lucide-react";
+import { FULL_CLIP_SECONDS, GUESS_TIMES } from "@/lib/game";
 
-type AudioPlayerProps = {
-  audiosrc: string;
-  time: number;
+type Props = {
+  /** Game token. The server decides how much audio it unlocks. */
+  token: string;
+  seconds: number;
   autoPlay?: boolean;
-  dayNumber: number;
 };
 
-function AudioPlayer({
-  audiosrc,
-  time,
-  autoPlay = false,
-  dayNumber,
-}: AudioPlayerProps) {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isBuffering, setIsBuffering] = useState(false);
-  const [error, setError] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const hasAttemptedAutoPlay = useRef(false);
+export default function AudioPlayer({ token, seconds, autoPlay = false }: Props) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [src, setSrc] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [position, setPosition] = useState(0);
 
-  const currentPreviewUrl = audiosrc;
+  // The parent keys this component by token, so each new token gets a fresh clip.
+  useEffect(() => {
+    let url: string | null = null;
+    let cancelled = false;
+    fetch("/api/game/clip", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`clip ${res.status}`);
+        return res.blob();
+      })
+      .then((blob) => {
+        if (cancelled) return;
+        url = URL.createObjectURL(blob);
+        setFailed(false);
+        setSrc(url);
+      })
+      .catch(() => !cancelled && setFailed(true));
+    return () => {
+      cancelled = true;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [token]);
 
   useEffect(() => {
+    if (autoPlay && src) audioRef.current?.play().catch(() => {});
+  }, [autoPlay, src]);
+
+  function toggle() {
     const audio = audioRef.current;
     if (!audio) return;
-
-    const handleCanPlay = () => {
-      setIsLoaded(true);
-      setError(false);
-    };
-
-    const handleError = (e: ErrorEvent | Event) => {
-      console.error("Audio load error:", e);
-      setIsLoaded(false);
-      if (isPlaying) setError(true);
-    };
-
-    setIsLoaded(false);
-    setError(false);
-    setIsPlaying(false);
-
-    audio.addEventListener("canplay", handleCanPlay);
-    audio.addEventListener("error", handleError);
-
-    if (currentPreviewUrl) {
-      audio.load();
-    }
-
-    return () => {
-      audio.removeEventListener("canplay", handleCanPlay);
-      audio.removeEventListener("error", handleError);
-    };
-  }, [currentPreviewUrl]);
-
-  const playAudio = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio || isPlaying || !currentPreviewUrl) return;
-
-    setError(false);
-
-    const playPromise = audio.play();
-    setIsBuffering(true);
-
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          setIsBuffering(false);
-          setIsPlaying(true);
-          setIsLoaded(true);
-
-          if (timeoutRef.current) clearTimeout(timeoutRef.current);
-
-          timeoutRef.current = setTimeout(() => {
-            if (audio) {
-              audio.pause();
-              audio.currentTime = 0;
-              setIsPlaying(false);
-            }
-          }, time * 1000);
-        })
-        .catch((err) => {
-          console.error("Playback failed:", err);
-          setIsBuffering(false);
-          setIsPlaying(false);
-          if (err.name !== "AbortError" && err.name !== "NotAllowedError") {
-            setError(true);
-          }
-        });
+    if (playing) {
+      audio.pause();
+      audio.currentTime = 0;
     } else {
-      setIsBuffering(false);
+      audio.currentTime = 0;
+      audio.play().catch(() => setFailed(true));
     }
-  }, [time, isPlaying, currentPreviewUrl]);
+  }
 
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (autoPlay && isLoaded && !isPlaying && !hasAttemptedAutoPlay.current) {
-      hasAttemptedAutoPlay.current = true;
-      playAudio();
-    }
-  }, [autoPlay, isLoaded, isPlaying, playAudio]);
-
-  useEffect(() => {
-    hasAttemptedAutoPlay.current = false;
-  }, [audiosrc]);
+  const percent = (s: number) => `${(s / FULL_CLIP_SECONDS) * 100}%`;
 
   return (
-    <div className="flex flex-col items-center gap-1.5">
-      <audio
-        ref={audioRef}
-        src={currentPreviewUrl}
-        preload="auto"
-        playsInline
-      />
-      <Button
-        onClick={playAudio}
-        className="cursor-pointer"
-        variant="outline"
-        size="icon"
-        disabled={isPlaying || isBuffering || !currentPreviewUrl}
-        aria-label={isPlaying ? "Playing audio preview" : "Play audio preview"}
-        title={isPlaying ? "Playing..." : "Play preview"}
-      >
-        {isBuffering ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : isPlaying ? (
-          <AudioLines className="h-4 w-4 animate-pulse" />
-        ) : (
-          <Play className="h-4 w-4" />
-        )}
-      </Button>
-      {error && (
-        <p className="text-xs text-red-500 text-center">Audio unavailable</p>
+    <div className="w-full space-y-2">
+      {src && (
+        <audio
+          ref={audioRef}
+          src={src}
+          playsInline
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+          onEnded={() => {
+            setPlaying(false);
+            setPosition(0);
+          }}
+          onTimeUpdate={(e) => setPosition(e.currentTarget.currentTime)}
+        />
       )}
+      <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted" aria-hidden>
+        <div className="absolute inset-y-0 left-0 bg-primary/30" style={{ width: percent(seconds) }} />
+        <div className="absolute inset-y-0 left-0 bg-primary" style={{ width: percent(position) }} />
+        {GUESS_TIMES.slice(0, -1).map((t) => (
+          <div key={t} className="absolute inset-y-0 w-px bg-background" style={{ left: percent(t) }} />
+        ))}
+      </div>
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>0:00</span>
+        <Button
+          onClick={toggle}
+          variant="outline"
+          size="icon"
+          className="size-12 rounded-full"
+          disabled={!src}
+          aria-label={playing ? "Stop" : `Play ${seconds} second clip`}
+        >
+          {!src && !failed ? (
+            <Loader2 className="size-5 animate-spin" />
+          ) : playing ? (
+            <Square className="size-5" />
+          ) : (
+            <Play className="size-5" />
+          )}
+        </Button>
+        <span>0:{String(seconds).padStart(2, "0")}</span>
+      </div>
+      {failed && <p className="text-center text-xs text-red-500">Audio unavailable. Try again later.</p>}
     </div>
   );
 }
-
-export default memo(AudioPlayer);
