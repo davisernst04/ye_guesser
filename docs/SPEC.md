@@ -12,8 +12,9 @@ or make money.
 
 - A fixed, clean list is committed to the repo. A script builds it from Deezer once,
   and the list is checked by hand.
-- In: solo studio albums; collab albums (Watch the Throne, Kids See Ghosts,
-  Vultures 1 and 2); his own bonus songs and loose singles.
+- In: solo studio albums; collab albums (Kids See Ghosts, Vultures 1 and 2);
+  his own bonus songs and loose singles. Only songs Deezer can play count, so
+  Watch the Throne is out.
 - Out: features on other artists' songs, skits, interludes, remixes, live versions,
   clean versions, and duplicates.
 - The daily order is a fixed shuffle. No song repeats until the whole list has been

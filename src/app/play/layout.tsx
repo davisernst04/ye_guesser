@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Play Game",
+  title: "Daily",
   description:
     "Play the Ye Guesser game. Listen to Kanye West track previews and test your knowledge by guessing the song titles.",
 };
