@@ -96,9 +96,9 @@ function clipSeconds(session: Session): number {
   return status(session) === "playing" ? GUESS_TIMES[session.guesses.length]! : FULL_CLIP_SECONDS;
 }
 
-function respond(session: Session): GameResponse {
+function viewOf(session: Session): GameView {
   const state = status(session);
-  const view: GameView = {
+  return {
     mode: session.mode,
     puzzle: session.puzzle,
     guesses: session.guesses.map((songId) => ({ songId, correct: songId === session.songId })),
@@ -106,7 +106,10 @@ function respond(session: Session): GameResponse {
     clipSeconds: clipSeconds(session),
     answer: state === "playing" ? null : songById(session.songId)!,
   };
-  return { token: seal(session), view };
+}
+
+function respond(session: Session): GameResponse {
+  return { token: seal(session), view: viewOf(session) };
 }
 
 export function startDaily(puzzle: number): GameResponse {
@@ -136,4 +139,12 @@ export function guess(token: unknown, songId: unknown): GuessResult {
 export function clipFor(token: unknown): { songId: number; seconds: number } | null {
   const session = open(token);
   return session ? { songId: session.songId, seconds: clipSeconds(session) } : null;
+}
+
+/** The view of a finished daily game, or null. Lets a guest prove past results when they log in. */
+export function finishedDaily(token: unknown): GameView | null {
+  const session = open(token);
+  if (session?.mode !== "daily") return null;
+  const view = viewOf(session);
+  return view.status === "playing" ? null : view;
 }

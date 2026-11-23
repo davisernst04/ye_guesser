@@ -7,7 +7,10 @@ Browser game inspired by Wordle, built around identifying Kanye West tracks from
 - **Daily:** one song a day, the same for everyone. A new one starts at your local midnight.
 - **Practice:** unlimited random songs. They don't count toward your stats.
 - You get 6 guesses. Each miss or skip unlocks more of the clip: 1, 3, 5, 10, 20, then 30 seconds.
-- Stats, streaks and a share button (`Ye Guesser #327 🟥⬛🟩⬜⬜⬜ 🔥12`) are saved in your browser.
+- Stats, streaks and a share button (`Ye Guesser #327 🟥⬛🟩⬜⬜⬜ 🔥12`). Guests keep stats in the browser.
+- Optional login with Google or Discord saves stats to your account, with an optional username.
+  On your first login, your guest stats move into the new account. An account that already has
+  stats keeps its own. "Delete account" removes everything.
 
 The server runs each game. The browser holds an encrypted token, so it never sees the answer
 before the game ends. The server sends only the part of the clip that has been unlocked.
@@ -21,6 +24,7 @@ The full design is in [docs/SPEC.md](docs/SPEC.md).
 - TypeScript
 - Tailwind CSS
 - Radix UI
+- Supabase (auth and Postgres, optional)
 
 ## Development
 
@@ -34,6 +38,27 @@ Open `http://localhost:3000`.
 
 `GAME_SECRET` encrypts game tokens and seeds the secret daily song order. Changing it
 changes every daily song, so set it once per environment and keep it.
+
+## Accounts
+
+Without Supabase settings the game runs guest-only. To turn on accounts:
+
+1. Run `supabase/migrations/*.sql` in the Supabase project.
+2. In Supabase Auth, turn on the Google and Discord providers. Add your site's
+   `/auth/callback` URLs (for example `http://localhost:3000/**`) to the redirect allow list.
+3. Add these to `.env.local` (and to Vercel):
+
+```bash
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+SUPABASE_SECRET_KEY=sb_secret_...
+```
+
+All Supabase calls run on the server, so none of these keys reach the browser. The tables
+have row level security on and no policies, so only the server (secret key) can read or
+write them. When a daily game ends, the server records the result for a logged-in player.
+Guest results move into a new account only with their sealed game tokens, so a player
+cannot make up results.
 
 ## Production
 
@@ -68,7 +93,8 @@ MIT
 ## Vercel deployment
 
 Deploy the repository root using the Next.js preset. Install with `npm ci` and
-build with `npm run build`. Set `GAME_SECRET` in the project's environment variables.
+build with `npm run build`. Set `GAME_SECRET` and the three `SUPABASE_*` variables in
+the project's environment variables.
 npm is the deployment package manager;
 `package-lock.json` is the authoritative lockfile. Music metadata, cover art, and audio previews rely on external
 providers; their availability is separate from deployment success.

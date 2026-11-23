@@ -24,6 +24,11 @@ export type GameView = {
   answer: Song | null;
 };
 
+/** Stored result of a finished game: guesses used to win (1-6), or 0 for a loss. */
+export function resultOf(view: GameView): number {
+  return view.status === "won" ? view.guesses.length : 0;
+}
+
 export type GameResponse = { token: string; view: GameView };
 
 const DAY_MS = 86_400_000;
