@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { BarChart3, Check, Share2 } from "lucide-react";
+import { BarChart3, Check, Share2, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AudioPlayer from "@/components/audio-player";
 import { SongPicker } from "@/components/guess";
 import { StatsDialog } from "@/components/stats-dialog";
 import { FanNote } from "@/components/fan-note";
+import { AccountDialog } from "@/components/account-dialog";
+import { useAccount } from "@/lib/account";
 import {
   GUESS_TIMES,
   MAX_GUESSES,
@@ -51,14 +53,21 @@ export default function Game({ mode }: { mode: Mode }) {
   const [statsOpen, setStatsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [justFinished, setJustFinished] = useState(false);
+  const { account, refresh: refreshAccount } = useAccount();
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [shareName, setShareName] = useState(() => loadJson<boolean>("ye:shareName") ?? false);
+  const user = account?.user;
 
   const update = useCallback(
     (next: Saved) => {
       setGame(next);
       saveJson(storageKey, next);
-      if (next.view.mode === "daily" && next.view.status !== "playing") setResults(recordResult(next.view));
+      if (next.view.mode !== "daily" || next.view.status === "playing") return;
+      // The server records results for logged-in players.
+      if (user) void refreshAccount();
+      else setResults(recordResult(next));
     },
-    [storageKey],
+    [storageKey, user, refreshAccount],
   );
 
   const start = useCallback(async () => {
@@ -79,6 +88,10 @@ export default function Game({ mode }: { mode: Mode }) {
   /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     localStorage.removeItem("songGameCurrent"); // old save format
+    if (new URLSearchParams(window.location.search).get("login") === "failed") {
+      setError("Login failed. Try again.");
+      window.history.replaceState(null, "", window.location.pathname);
+    }
     if (!game) void start();
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
@@ -103,11 +116,14 @@ export default function Game({ mode }: { mode: Mode }) {
   }
 
   const today = localPuzzle();
-  const stats = computeStats(results, today);
+  const stats = computeStats(user ? user.results : results, today);
   const view = game?.view;
+  // This account finished today's puzzle on another device, so this game wouldn't count.
+  const playedElsewhere = mode === "daily" && view?.status === "playing" && user?.results[today] !== undefined;
 
   async function share(view: GameView) {
-    const text = shareText(view, stats.currentStreak, window.location.host);
+    const name = shareName ? user?.username : null;
+    const text = shareText(view, stats.currentStreak, window.location.host, name);
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -139,6 +155,16 @@ export default function Game({ mode }: { mode: Mode }) {
           <Button variant="ghost" size="icon" onClick={() => setStatsOpen(true)} aria-label="Stats">
             <BarChart3 />
           </Button>
+          {account?.enabled &&
+            (user?.username ? (
+              <Button variant="ghost" size="sm" onClick={() => setAccountOpen(true)} className="max-w-24">
+                <span className="truncate">{user.username}</span>
+              </Button>
+            ) : (
+              <Button variant="ghost" size="icon" onClick={() => setAccountOpen(true)} aria-label="Account">
+                <UserRound />
+              </Button>
+            ))}
         </nav>
       </header>
 
@@ -150,7 +176,15 @@ export default function Game({ mode }: { mode: Mode }) {
           </div>
         )}
 
-        {!view ? (
+        {playedElsewhere ? (
+          <div className="mt-24 space-y-3 text-center">
+            <h1 className="text-2xl font-bold">DAILY #{today}</h1>
+            <p className="text-sm text-muted-foreground">
+              You already played today&apos;s song on another device. New song at midnight.
+            </p>
+            <Button onClick={() => setStatsOpen(true)}>SEE STATS</Button>
+          </div>
+        ) : !view ? (
           !error && <div className="mx-auto mt-24 size-12 animate-spin rounded-full border-b-2 border-primary" />
         ) : (
           <>
@@ -259,6 +293,22 @@ export default function Game({ mode }: { mode: Mode }) {
       >
         {shareButton}
       </StatsDialog>
+
+      {account?.enabled && (
+        <AccountDialog
+          key={user ? `user:${user.username}` : "guest"}
+          account={account}
+          open={accountOpen}
+          onOpenChange={setAccountOpen}
+          onChange={refreshAccount}
+          next={mode === "daily" ? "/play" : "/practice"}
+          shareName={shareName}
+          onShareNameChange={(value) => {
+            setShareName(value);
+            saveJson("ye:shareName", value);
+          }}
+        />
+      )}
     </div>
   );
 }

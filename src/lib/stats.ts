@@ -1,10 +1,12 @@
 // Daily results and stats, kept in the browser for guests.
-import { MAX_GUESSES, type GameView } from "@/lib/game";
+import { MAX_GUESSES, resultOf, type GameResponse, type GameView } from "@/lib/game";
 
 /** Puzzle number -> guesses used to win (1-6), or 0 for a loss. */
 export type Results = Record<number, number>;
 
 const RESULTS_KEY = "ye:results";
+/** Puzzle number -> the finished game's sealed token, which proves the result on login. */
+const PROOFS_KEY = "ye:proofs";
 
 export function loadJson<T>(key: string): T | null {
   try {
@@ -27,13 +29,29 @@ export function loadResults(): Results {
   return loadJson<Results>(RESULTS_KEY) ?? {};
 }
 
-export function recordResult(view: GameView): Results {
+export function recordResult({ token, view }: GameResponse): Results {
   const results = loadResults();
   if (view.puzzle !== null && view.status !== "playing" && !(view.puzzle in results)) {
-    results[view.puzzle] = view.status === "won" ? view.guesses.length : 0;
+    results[view.puzzle] = resultOf(view);
     saveJson(RESULTS_KEY, results);
+    saveJson(PROOFS_KEY, { ...loadJson<Record<number, string>>(PROOFS_KEY), [view.puzzle]: token });
   }
   return results;
+}
+
+/** Tokens of the guest's finished daily games. */
+export function guestProofs(): string[] {
+  return Object.values(loadJson<Record<number, string>>(PROOFS_KEY) ?? {});
+}
+
+/** Drops guest stats once the player has logged in. */
+export function clearGuestResults(): void {
+  try {
+    localStorage.removeItem(RESULTS_KEY);
+    localStorage.removeItem(PROOFS_KEY);
+  } catch {
+    // Storage blocked: nothing was saved, so nothing to clear.
+  }
 }
 
 export type Stats = {
@@ -79,8 +97,8 @@ export function computeStats(results: Results, today: number): Stats {
   };
 }
 
-/** e.g. "Ye Guesser #327 🟥⬛🟩⬜⬜⬜ 🔥12" plus the site link. */
-export function shareText(view: GameView, streak: number, site: string): string {
+/** e.g. "Ye Guesser #327 🟥⬛🟩⬜⬜⬜ 🔥12", then the username if given, then the site link. */
+export function shareText(view: GameView, streak: number, site: string, username?: string | null): string {
   const squares = Array.from({ length: MAX_GUESSES }, (_, i) => {
     const guess = view.guesses[i];
     if (!guess) return "⬜";
@@ -88,5 +106,6 @@ export function shareText(view: GameView, streak: number, site: string): string 
     return guess.songId === null ? "⬛" : "🟥";
   }).join("");
   const fire = streak > 0 ? ` 🔥${streak}` : "";
-  return `Ye Guesser #${view.puzzle} ${squares}${fire}\n${site}`;
+  const by = username ? `\n— ${username}` : "";
+  return `Ye Guesser #${view.puzzle} ${squares}${fire}${by}\n${site}`;
 }
