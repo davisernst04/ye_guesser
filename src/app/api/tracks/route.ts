@@ -24,7 +24,6 @@ const EXCLUDE_TRACKS: readonly number[] = [
   528869471, 528869521, 528869561, 528869581, 528869591,
 ];
 
-export const runtime = "edge";
 export const revalidate = 7200;
 
 export async function GET() {
