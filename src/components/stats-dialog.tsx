@@ -32,7 +32,7 @@ export function StatsDialog({ stats, open, onOpenChange, highlight, children }: 
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Stats</DialogTitle>
-          <DialogDescription>Daily games only. Practice doesn&apos;t count.</DialogDescription>
+          <DialogDescription>Daily games only. Unlimited doesn&apos;t count.</DialogDescription>
         </DialogHeader>
 
         {/* The streak is the number players care about most, so it leads. */}

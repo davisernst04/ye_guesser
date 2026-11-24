@@ -48,7 +48,7 @@ function HomePage() {
           </Link>
         </Button>
         <Button asChild variant="secondary" size="lg" className="w-48">
-          <Link href="/practice">PRACTICE</Link>
+          <Link href="/unlimited">UNLIMITED</Link>
         </Button>
       </div>
 

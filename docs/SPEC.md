@@ -29,7 +29,7 @@ or make money.
   minus one day.
 - 6 guesses. The clip unlocks at 1, 3, 5, 10, 20, then 30 seconds.
 - Guesses are picked from the song list. A Skip button uses up one guess.
-- Practice mode: a random song with the same rules and a "Next song" button. It never
+- Unlimited mode: a random song with the same rules and a "Next song" button. It never
   changes stats.
 
 ## Anti-cheat

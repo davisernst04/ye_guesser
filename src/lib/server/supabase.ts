@@ -41,5 +41,5 @@ export async function currentUserId(): Promise<string | null> {
 
 /** Where to send a player after login. Only our own game pages, never another site. */
 export function safeNext(next: string | null): string {
-  return next === "/practice" ? "/practice" : "/play";
+  return next === "/unlimited" ? "/unlimited" : "/play";
 }

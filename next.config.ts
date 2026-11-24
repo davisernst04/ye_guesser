@@ -16,6 +16,9 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   reactStrictMode: true,
+  async redirects() {
+    return [{ source: "/practice", destination: "/unlimited", permanent: true }];
+  },
 };
 
 export default nextConfig;

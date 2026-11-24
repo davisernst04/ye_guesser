@@ -156,12 +156,12 @@ export default function Game({ mode }: { mode: Mode }) {
   const skipSeconds = view && view.guesses.length < MAX_GUESSES - 1
     ? GUESS_TIMES[view.guesses.length + 1]! - GUESS_TIMES[view.guesses.length]!
     : null;
-  // The ▶▶ button skips while playing, and goes to the next song once a practice game ends.
+  // The ▶▶ button skips while playing, and goes to the next song once an unlimited game ends.
   const forward =
     view?.status === "playing"
       ? { onClick: () => guess(null), caption: skipSeconds ? `+${skipSeconds}s` : "Give up",
           label: skipSeconds ? `Skip and unlock ${skipSeconds} more seconds` : "Give up" }
-      : view?.mode === "practice"
+      : view?.mode === "unlimited"
         ? { onClick: start, caption: "Next", label: "Next song" }
         : null;
   const forwardButton = (
@@ -200,16 +200,16 @@ export default function Game({ mode }: { mode: Mode }) {
             Ye Guesser
           </Link>
           <nav className="flex rounded-full bg-white/10 p-0.5 text-xs backdrop-blur-xl">
-            {(["daily", "practice"] as const).map((m) => (
+            {(["daily", "unlimited"] as const).map((m) => (
               <Link
                 key={m}
-                href={m === "daily" ? "/play" : "/practice"}
+                href={m === "daily" ? "/play" : "/unlimited"}
                 aria-current={mode === m ? "page" : undefined}
                 className={`rounded-full px-3 py-1.5 transition-[background-color,color,transform] duration-200 ease-spring active:scale-95 ${
                   mode === m ? "bg-white/90 text-black" : "text-white/60 hover:text-white"
                 }`}
               >
-                {m === "daily" ? "DAILY" : "PRACTICE"}
+                {m === "daily" ? "DAILY" : "UNLIMITED"}
               </Link>
             ))}
           </nav>
@@ -227,7 +227,7 @@ export default function Game({ mode }: { mode: Mode }) {
             <div className="mt-24 space-y-4 text-center">
               <h1 className="text-2xl font-bold">DAILY #{today}</h1>
               <p className="text-sm text-label-2">
-                You already played today&apos;s song on another device. New song at midnight.
+                You already played today&apos;s song on another device.
               </p>
               <Button onClick={() => setStatsOpen(true)}>See stats</Button>
             </div>
@@ -269,7 +269,7 @@ export default function Game({ mode }: { mode: Mode }) {
                   seconds={view.clipSeconds}
                   autoPlay={justFinished}
                   onPlayingChange={setPlaying}
-                  label={view.mode === "daily" ? `DAILY #${view.puzzle}` : "PRACTICE"}
+                  label={view.mode === "daily" ? `DAILY #${view.puzzle}` : "UNLIMITED"}
                   after={forwardButton}
                 />
               </div>
@@ -281,10 +281,9 @@ export default function Game({ mode }: { mode: Mode }) {
                 ) : view.mode === "daily" ? (
                   <div className="space-y-2 text-center">
                     {shareButton}
-                    <p className="text-xs text-white/60">
-                      New song at midnight.{" "}
-                      <Link href="/practice" className="text-ye underline-offset-4 hover:underline">
-                        Practice while you wait
+                    <p className="text-xs">
+                      <Link href="/unlimited" className="text-ye underline-offset-4 hover:underline">
+                        Play unlimited
                       </Link>
                     </p>
                   </div>
@@ -345,7 +344,7 @@ export default function Game({ mode }: { mode: Mode }) {
           open={accountOpen}
           onOpenChange={setAccountOpen}
           onChange={refreshAccount}
-          next={mode === "daily" ? "/play" : "/practice"}
+          next={mode === "daily" ? "/play" : "/unlimited"}
           shareName={shareName}
           onShareNameChange={(value) => {
             setShareName(value);
