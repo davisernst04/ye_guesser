@@ -3,11 +3,11 @@
 import { useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
-import { LogOut, Trash2, UserRound } from "lucide-react";
+import { Check, Pencil, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Account, Profile } from "@/lib/account";
-import { ALBUM_COVERS } from "@/lib/covers";
+import { GAME_ALBUMS, MAX_FAVORITES } from "@/lib/covers";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -23,7 +23,7 @@ type Props = {
 function PrivacyNote({ className }: { className?: string }) {
   return (
     <p className={cn("px-1 text-xs leading-relaxed text-label-3", className)}>
-      Privacy: we keep your Google or Discord user ID and your daily results. Supabase, our login service, also
+      Privacy: we keep your Google or Discord user ID, your daily results and your favourite albums. Supabase, our login service, also
       keeps the name, email and picture your provider sends. The game shows them only to you. Deleting your account
       removes all of it.
     </p>
@@ -69,9 +69,6 @@ export function Avatar({ profile, className = "" }: { profile: Profile | null; c
   );
 }
 
-const group = "overflow-hidden rounded-2xl bg-glass divide-y divide-white/[0.06]";
-const row = "flex min-h-12 w-full items-center gap-3 px-4 py-2.5 text-left text-[15px]";
-
 function GoogleLogo({ className = "size-5" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden className={className}>
@@ -115,8 +112,8 @@ function LoginButtons({ next }: { next: string }) {
   );
 }
 
-// Twice round the albums the game uses (Watch the Throne isn't playable), so the wall has no gaps.
-const WALL = [...ALBUM_COVERS, ...ALBUM_COVERS].filter((cover) => cover.alt !== "Watch the Throne");
+// Twice round the albums the game uses, so the wall has no gaps.
+const WALL = [...GAME_ALBUMS, ...GAME_ALBUMS];
 
 /** Album covers tilted into a wall that fades into the sheet, like the home page. */
 function AlbumWall() {
@@ -142,21 +139,167 @@ function AlbumWall() {
   );
 }
 
+/** The avatar with the login provider's logo on its corner. */
+function ProviderAvatar({ profile }: { profile: Profile }) {
+  return (
+    <span className="relative block">
+      <Avatar profile={profile} className="size-16 text-3xl ring-4 ring-neutral-900" />
+      {profile.provider && (
+        <span
+          className={cn(
+            "absolute -right-0.5 -bottom-0.5 grid size-6 place-items-center rounded-full ring-[3px] ring-neutral-900",
+            profile.provider === "google" ? "bg-white" : "bg-[#5865F2] text-white",
+          )}
+        >
+          {profile.provider === "google" ? <GoogleLogo className="size-3.5" /> : <DiscordLogo className="size-3.5" />}
+          <span className="sr-only">Signed in with {profile.provider === "google" ? "Google" : "Discord"}</span>
+        </span>
+      )}
+    </span>
+  );
+}
+
+const FAN_ANGLES = [-20, -7, 7, 20];
+
+/** The favourite albums fanned out like records, empty sleeves for the rest, the avatar in front. */
+function FavoriteFan({ profile, favorites }: { profile: Profile; favorites: string[] }) {
+  const covers = favorites.flatMap((title) => GAME_ALBUMS.filter((album) => album.alt === title));
+  return (
+    <div className="relative h-[190px]">
+      <ul aria-label="Favourite albums">
+        {FAN_ANGLES.map((angle, i) => {
+          const cover = covers[i];
+          return (
+            <li
+              key={i}
+              aria-hidden={!cover}
+              style={{ transform: `translateX(-50%) rotate(${angle}deg)` }}
+              className="absolute top-3 left-1/2 w-[124px] origin-[50%_260%]"
+            >
+              {cover ? (
+                <Image
+                  src={cover.src}
+                  alt={cover.alt}
+                  width={248}
+                  height={248}
+                  sizes="124px"
+                  className="aspect-square w-full rounded-md object-cover shadow-[0_14px_28px_-10px_rgb(0_0_0/0.9)]"
+                />
+              ) : (
+                <span className="block aspect-square rounded-md border-2 border-dashed border-white/15 bg-neutral-800" />
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2">
+        <ProviderAvatar profile={profile} />
+      </div>
+    </div>
+  );
+}
+
+/** A grid of every album. Tap to pick up to 4, in order. */
+function FavoritePicker({
+  initial,
+  busy,
+  onSave,
+  onCancel,
+}: {
+  initial: string[];
+  busy: boolean;
+  onSave: (albums: string[]) => void;
+  onCancel: () => void;
+}) {
+  const [picked, setPicked] = useState(initial);
+  const full = picked.length >= MAX_FAVORITES;
+
+  function toggle(title: string) {
+    if (picked.includes(title)) setPicked(picked.filter((album) => album !== title));
+    else if (!full) setPicked([...picked, title]);
+  }
+
+  return (
+    <>
+      <DialogHeader className="gap-2">
+        <DialogTitle className="font-custom text-[2.75rem] leading-[0.95] font-normal tracking-normal text-ye">
+          Your top 4
+        </DialogTitle>
+        <DialogDescription>
+          <span className="text-ye">
+            {picked.length} of {MAX_FAVORITES}
+          </span>{" "}
+          picked. {full ? "Tap a pick to remove it." : "Tap a cover to add or remove it."}
+        </DialogDescription>
+      </DialogHeader>
+      <ul className="grid grid-cols-4 gap-2">
+        {GAME_ALBUMS.map((album) => {
+          const on = picked.includes(album.alt);
+          return (
+            <li key={album.alt}>
+              <button
+                type="button"
+                aria-pressed={on}
+                aria-disabled={full && !on}
+                onClick={() => toggle(album.alt)}
+                className={cn(
+                  "relative block w-full rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ye/60",
+                  full && !on && "opacity-35",
+                )}
+              >
+                <Image
+                  src={album.src}
+                  alt={album.alt}
+                  width={160}
+                  height={160}
+                  sizes="96px"
+                  className="aspect-square w-full rounded-md object-cover"
+                />
+                {on && (
+                  <>
+                    <span className="absolute inset-0 rounded-md ring-[3px] ring-ye ring-inset" />
+                    <span className="absolute top-1 right-1 grid size-5 place-items-center rounded-full bg-ye text-black">
+                      <Check className="size-3" strokeWidth={4} />
+                    </span>
+                  </>
+                )}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="grid gap-2">
+        <Button size="lg" className="w-full bg-ye text-black hover:bg-ye/90" disabled={busy} onClick={() => onSave(picked)}>
+          Save favourites
+        </Button>
+        <Button variant="ghost" className="w-full text-label-2" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+    </>
+  );
+}
+
 export function AccountDialog({ account, open, onOpenChange, onChange, next }: Props) {
   const user = account.user;
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
-  async function run(action: () => Promise<string | null>) {
+  /** Runs a request and reloads the account. Returns true if it worked. */
+  async function run(action: () => Promise<string | null>): Promise<boolean> {
     setBusy(true);
     setError(null);
     try {
       const message = await action();
       if (message) setError(message);
       else await onChange();
+      return !message;
     } catch {
       setError("Something went wrong. Try again.");
+      return false;
     } finally {
       setBusy(false);
     }
@@ -169,9 +312,11 @@ export function AccountDialog({ account, open, onOpenChange, onChange, next }: P
         onOpenChange(value);
         setError(null);
         setConfirmDelete(false);
+        setPicking(false);
+        setShowPrivacy(false);
       }}
     >
-      <DialogContent className={user ? "sm:max-w-sm" : "gap-0 sm:max-w-[35rem]"}>
+      <DialogContent className={user ? undefined : "gap-0 sm:max-w-[35rem]"}>
         {!user ? (
           <>
             <AlbumWall />
@@ -197,59 +342,56 @@ export function AccountDialog({ account, open, onOpenChange, onChange, next }: P
               </div>
             </div>
           </>
+        ) : picking ? (
+          <FavoritePicker
+            initial={user.favorites}
+            busy={busy}
+            onCancel={() => setPicking(false)}
+            onSave={async (albums) => {
+              if (await run(() => send("/api/account/favorites", "PUT", { albums }))) setPicking(false);
+            }}
+          />
         ) : (
           <>
-            <div className="flex items-center gap-4 pt-2">
-              <Avatar profile={user} className="size-16 text-3xl" />
-              <DialogHeader className="min-w-0 pr-8">
-                <DialogTitle className="truncate">{user.name ?? user.email ?? "Your account"}</DialogTitle>
-                <DialogDescription className="truncate">
-                  {user.handle ? `@${user.handle}` : "Stats saved to your account"}
-                </DialogDescription>
-              </DialogHeader>
-            </div>
+            <FavoriteFan profile={user} favorites={user.favorites} />
+            <DialogHeader className="items-center gap-2 pr-0 text-center">
+              <DialogTitle className="max-w-full truncate font-custom text-[2.75rem] leading-[1.05] font-normal tracking-normal text-ye">
+                {user.name ?? user.handle ?? user.email ?? "Your account"}
+              </DialogTitle>
+              <DialogDescription className="max-w-full truncate">
+                {user.handle ? `@${user.handle}` : (user.email ?? "Stats saved to your account")}
+              </DialogDescription>
+              <Button variant="secondary" size="sm" className="mt-1 text-label-2" onClick={() => setPicking(true)}>
+                <Pencil /> Edit favourites
+              </Button>
+            </DialogHeader>
 
-            <div className={group}>
-              {user.email && (
-                <div className={row}>
-                  <span className="shrink-0">Email</span>
-                  <span className="min-w-0 flex-1 truncate text-right text-label-2">{user.email}</span>
-                </div>
-              )}
-              {user.provider && (
-                <div className={row}>
-                  <span className="flex-1">Signed in with</span>
-                  <span className="flex items-center gap-2 text-label-2">
-                    {user.provider === "google" ? (
-                      <>
-                        <GoogleLogo className="size-4" /> Google
-                      </>
-                    ) : (
-                      <>
-                        <DiscordLogo className="size-4 text-[#5865F2]" /> Discord
-                      </>
-                    )}
-                  </span>
-                </div>
-              )}
-            </div>
+            <Button
+              variant="secondary"
+              size="lg"
+              className="w-full rounded-2xl"
+              disabled={busy}
+              onClick={() => run(() => send("/auth/logout", "POST"))}
+            >
+              Log out
+            </Button>
 
-            <div className={group}>
+            <div className="-mt-1 flex items-center justify-between px-1 text-sm">
               <button
                 type="button"
-                className={`${row} transition-colors hover:bg-glass active:bg-glass-strong disabled:opacity-40`}
-                disabled={busy}
-                onClick={() => run(() => send("/auth/logout", "POST"))}
+                aria-expanded={showPrivacy}
+                onClick={() => setShowPrivacy(!showPrivacy)}
+                className="text-xs text-label-2 underline underline-offset-3 hover:text-foreground"
               >
-                <LogOut className="size-[18px] text-label-2" /> Log out
+                What we store
               </button>
               <button
                 type="button"
-                className={`${row} text-miss transition-colors hover:bg-glass active:bg-glass-strong disabled:opacity-40`}
+                className="text-miss hover:underline disabled:opacity-40"
                 disabled={busy}
                 onClick={() => (confirmDelete ? run(() => send("/api/account", "DELETE")) : setConfirmDelete(true))}
               >
-                <Trash2 className="size-[18px]" /> {confirmDelete ? "Yes, delete everything" : "Delete account"}
+                {confirmDelete ? "Yes, delete everything" : "Delete account"}
               </button>
             </div>
             <AnimatePresence initial={false}>
@@ -259,19 +401,19 @@ export function AccountDialog({ account, open, onOpenChange, onChange, next }: P
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="-mt-3 overflow-hidden px-4 text-sm text-miss"
+                  className="-mt-3 overflow-hidden px-1 text-right text-sm text-miss"
                 >
-                  This deletes your account and all your stats. You can&apos;t undo it.
+                  This deletes your account, stats and favourites. You can&apos;t undo it.
                 </motion.p>
               )}
             </AnimatePresence>
-            {error && (
-              <p role="alert" className="px-1 text-sm text-miss">
-                {error}
-              </p>
-            )}
-            <PrivacyNote />
+            {showPrivacy && <PrivacyNote className="-mt-2" />}
           </>
+        )}
+        {error && (
+          <p role="alert" className="px-1 text-sm text-miss">
+            {error}
+          </p>
         )}
       </DialogContent>
     </Dialog>

@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import type { Account } from "@/lib/account";
-import { deleteAccount, loadResults } from "@/lib/server/accounts";
+import { deleteAccount, loadFavorites, loadResults } from "@/lib/server/accounts";
 import { accountsEnabled, authClient, currentUser, currentUserId } from "@/lib/server/supabase";
 
 const noStore = { headers: { "Cache-Control": "no-store" } };
 
 export async function GET() {
   const user = await currentUser();
-  const account: Account = user
-    ? { enabled: true, user: { ...user.profile, results: await loadResults(user.id) } }
-    : { enabled: accountsEnabled, user: null };
+  if (!user) return NextResponse.json({ enabled: accountsEnabled, user: null } satisfies Account, noStore);
+  const [results, favorites] = await Promise.all([loadResults(user.id), loadFavorites(user.id)]);
+  const account: Account = { enabled: true, user: { ...user.profile, results, favorites } };
   return NextResponse.json(account, noStore);
 }
 

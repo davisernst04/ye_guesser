@@ -18,3 +18,9 @@ export const ALBUM_COVERS = [
   { src: "/covers/15-vultures-2.jpg", alt: "Vultures 2" },
   { src: "/covers/16-bully.jpg", alt: "Bully" },
 ];
+
+// The albums the game uses. Watch the Throne isn't playable, so it is left out.
+export const GAME_ALBUMS = ALBUM_COVERS.filter((cover) => cover.alt !== "Watch the Throne");
+
+/** How many favourite albums an account can pick. */
+export const MAX_FAVORITES = 4;
