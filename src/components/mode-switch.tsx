@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, type MouseEvent, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -19,8 +19,17 @@ const MODES = [
   { mode: "unlimited", label: "UNLIMITED", href: "/unlimited" },
 ] as const;
 
-// Daily sits left of Unlimited, so the game slides that way (see game-loader.tsx).
-const slideTo = (mode: Mode) => [mode === "unlimited" ? "mode-left" : "mode-right"];
+// When the toggle last changed the page. The new page reads it to know it should slide in.
+let switchedAt = -Infinity;
+const markSwitch = () => {
+  switchedAt = performance.now();
+};
+
+/** True if the toggle just opened this page, as opposed to a link or a reload. */
+export function useSwitchedIn() {
+  const [switchedIn] = useState(() => performance.now() - switchedAt < 1000);
+  return switchedIn;
+}
 
 // A quick spring with a little overshoot, like the iOS segmented control.
 // It counts as done once it is within half a pixel, so the page does not wait on the tail.
@@ -28,9 +37,8 @@ const SPRING = { type: "spring", stiffness: 600, damping: 36, mass: 0.8, restDel
 
 /**
  * The Daily / Unlimited toggle. The pill glides to the tab you tap, then the page follows.
- * The glide must end before the page changes: during the page's view transition the
- * browser draws the header from a snapshot, and iOS Safari updates that snapshot late,
- * so a pill still moving there snaps into place when the transition ends.
+ * Each mode is its own page, so the switch remounts with the page. The glide ends first,
+ * so the new switch can put its pill straight on its tab.
  */
 export function ModeSwitch({ mode }: { mode: Mode }) {
   const nav = useRef<HTMLElement>(null);
@@ -65,7 +73,8 @@ export function ModeSwitch({ mode }: { mode: Mode }) {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
     event.preventDefault();
     await moveTo(target);
-    router.push(href, { transitionTypes: slideTo(target) });
+    markSwitch();
+    router.push(href);
   };
 
   useLayoutEffect(() => {
