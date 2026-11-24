@@ -7,6 +7,7 @@ import { LogOut, Trash2, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Account, Profile } from "@/lib/account";
+import { ALBUM_COVERS } from "@/lib/covers";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -19,9 +20,9 @@ type Props = {
   next: string;
 };
 
-function PrivacyNote() {
+function PrivacyNote({ className }: { className?: string }) {
   return (
-    <p className="px-1 text-xs leading-relaxed text-label-3">
+    <p className={cn("px-1 text-xs leading-relaxed text-label-3", className)}>
       Privacy: we keep your Google or Discord user ID and your daily results. Supabase, our login service, also
       keeps the name, email and picture your provider sends. The game shows them only to you. Deleting your account
       removes all of it.
@@ -90,21 +91,53 @@ function DiscordLogo({ className = "size-5" }: { className?: string }) {
   );
 }
 
-/** Google and Discord login. `compact` puts them side by side. */
-export function LoginButtons({ next, compact = false }: { next: string; compact?: boolean }) {
-  const size = compact ? "default" : "lg";
+/** Google and Discord login, side by side. Phones show only the provider name. */
+function LoginButtons({ next }: { next: string }) {
   return (
-    <div className={compact ? "grid grid-cols-2 gap-2" : "space-y-2.5"}>
-      <Button asChild size={size} className="w-full">
+    <div className="grid grid-cols-2 gap-2.5">
+      <Button asChild size="lg" className="w-full">
         <a href={`/auth/login?provider=google&next=${next}`}>
-          <GoogleLogo /> {compact ? "Google" : "Continue with Google"}
+          <GoogleLogo />
+          <span>
+            <span className="max-sm:sr-only">Continue with </span>Google
+          </span>
         </a>
       </Button>
-      <Button asChild size={size} className="w-full bg-[#5865F2] text-white hover:bg-[#5865F2]/90">
+      <Button asChild size="lg" className="w-full bg-[#5865F2] text-white hover:bg-[#5865F2]/90">
         <a href={`/auth/login?provider=discord&next=${next}`}>
-          <DiscordLogo /> {compact ? "Discord" : "Continue with Discord"}
+          <DiscordLogo />
+          <span>
+            <span className="max-sm:sr-only">Continue with </span>Discord
+          </span>
         </a>
       </Button>
+    </div>
+  );
+}
+
+// Twice round the albums the game uses (Watch the Throne isn't playable), so the wall has no gaps.
+const WALL = [...ALBUM_COVERS, ...ALBUM_COVERS].filter((cover) => cover.alt !== "Watch the Throne");
+
+/** Album covers tilted into a wall that fades into the sheet, like the home page. */
+function AlbumWall() {
+  return (
+    <div
+      aria-hidden
+      className="relative -mx-5 -mt-9 h-[clamp(11rem,42dvh,24rem)] overflow-hidden [mask-image:linear-gradient(#000_25%,transparent_85%)] sm:-mx-6"
+    >
+      <div className="absolute -inset-x-16 -top-12 grid -rotate-12 grid-cols-6 gap-2">
+        {WALL.map((cover, i) => (
+          <Image
+            key={i}
+            src={cover.src}
+            alt=""
+            width={160}
+            height={160}
+            sizes="128px"
+            className="aspect-square w-full rounded-lg object-cover"
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -138,23 +171,31 @@ export function AccountDialog({ account, open, onOpenChange, onChange, next }: P
         setConfirmDelete(false);
       }}
     >
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className={user ? "sm:max-w-sm" : "gap-0 sm:max-w-[35rem]"}>
         {!user ? (
           <>
-            <div className="flex flex-col items-center pt-2 text-center">
-              <Avatar profile={null} className="size-20 bg-glass-strong text-label-2" />
-              <DialogHeader className="mt-4 items-center pr-0 text-center">
-                <DialogTitle>Keep your streak</DialogTitle>
-                <DialogDescription className="max-w-64">
+            <AlbumWall />
+            {/* The title overlaps the bottom of the wall. */}
+            <div className="relative -mt-24 space-y-6">
+              <DialogHeader className="gap-3 pr-0">
+                <DialogTitle className="font-custom text-[clamp(3.25rem,15vw,4.75rem)] leading-[0.95] font-normal tracking-normal text-ye">
+                  Keep your streak
+                </DialogTitle>
+                <DialogDescription className="max-w-[28ch] text-base">
                   Log in to save your stats and play on any device.
                 </DialogDescription>
               </DialogHeader>
+              <LoginButtons next={next} />
+              <div className="text-xs leading-relaxed text-label-3">
+                <p>Stats from this browser move into a new account. An account that already has stats keeps its own.</p>
+                <details className="mt-2">
+                  <summary className="w-fit cursor-pointer list-none text-label-2 underline underline-offset-3 hover:text-foreground">
+                    What we store
+                  </summary>
+                  <PrivacyNote className="mt-1.5 px-0" />
+                </details>
+              </div>
             </div>
-            <LoginButtons next={next} />
-            <p className="px-1 text-center text-xs leading-relaxed text-label-2">
-              On your first login, your stats from this browser move into the new account. An account that already has
-              stats keeps its own.
-            </p>
           </>
         ) : (
           <>
@@ -224,15 +265,14 @@ export function AccountDialog({ account, open, onOpenChange, onChange, next }: P
                 </motion.p>
               )}
             </AnimatePresence>
+            {error && (
+              <p role="alert" className="px-1 text-sm text-miss">
+                {error}
+              </p>
+            )}
+            <PrivacyNote />
           </>
         )}
-
-        {error && (
-          <p role="alert" className="px-1 text-sm text-miss">
-            {error}
-          </p>
-        )}
-        <PrivacyNote />
       </DialogContent>
     </Dialog>
   );
