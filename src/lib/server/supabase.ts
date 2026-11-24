@@ -16,6 +16,8 @@ export const accountsEnabled = Boolean(url && publishableKey && secretKey);
 export async function authClient(): Promise<SupabaseClient> {
   const store = await cookies();
   return createServerClient(url!, publishableKey!, {
+    // Only the server reads the auth cookies, so page scripts never get the session.
+    cookieOptions: { httpOnly: true },
     cookies: {
       getAll: () => store.getAll(),
       setAll: (list) => list.forEach(({ name, value, options }) => store.set(name, value, options)),
