@@ -159,13 +159,13 @@ function ProviderAvatar({ profile }: { profile: Profile }) {
   );
 }
 
-const FAN_ANGLES = [-21, -7, 7, 21];
+const FAN_ANGLES = [-20, -7, 7, 20];
 
 /** The favourite albums fanned out like records, empty sleeves for the rest, the avatar in front. */
 function FavoriteFan({ profile, favorites }: { profile: Profile; favorites: string[] }) {
   const covers = favorites.flatMap((title) => GAME_ALBUMS.filter((album) => album.alt === title));
   return (
-    <div className="relative h-[164px]">
+    <div className="relative h-[190px]">
       <ul aria-label="Favourite albums">
         {FAN_ANGLES.map((angle, i) => {
           const cover = covers[i];
@@ -174,15 +174,15 @@ function FavoriteFan({ profile, favorites }: { profile: Profile; favorites: stri
               key={i}
               aria-hidden={!cover}
               style={{ transform: `translateX(-50%) rotate(${angle}deg)` }}
-              className="absolute top-3 left-1/2 w-[100px] origin-[50%_260%]"
+              className="absolute top-3 left-1/2 w-[124px] origin-[50%_260%]"
             >
               {cover ? (
                 <Image
                   src={cover.src}
                   alt={cover.alt}
-                  width={200}
-                  height={200}
-                  sizes="100px"
+                  width={248}
+                  height={248}
+                  sizes="124px"
                   className="aspect-square w-full rounded-md object-cover shadow-[0_14px_28px_-10px_rgb(0_0_0/0.9)]"
                 />
               ) : (
