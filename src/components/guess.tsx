@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SONGS, coverUrl } from "@/lib/game";
+import { songScore } from "@/lib/search";
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
@@ -41,7 +42,10 @@ export function SongPicker({ onGuess, exclude, disabled = false, className }: Pr
         <DialogContent className="flex h-[88dvh] flex-col gap-3 px-3 sm:h-[70dvh] sm:px-3">
           <DialogTitle className="px-2 pr-12">Guess the song</DialogTitle>
           <DialogDescription className="sr-only">Search by song title or album.</DialogDescription>
-          <Command className="min-h-0 flex-1 bg-transparent">
+          <Command
+            className="min-h-0 flex-1 bg-transparent"
+            filter={(_value, search, keywords = []) => songScore(search, keywords[0] ?? "", keywords[1] ?? "")}
+          >
             <CommandInput
               placeholder="Song or album"
               wrapperClassName="mx-1 h-11 rounded-xl border-none bg-glass-strong"
@@ -52,7 +56,8 @@ export function SongPicker({ onGuess, exclude, disabled = false, className }: Pr
               {options.map((song) => (
                 <CommandItem
                   key={song.id}
-                  value={`${song.title} ${song.album} ${song.id}`}
+                  value={String(song.id)}
+                  keywords={[song.title, song.album]}
                   onSelect={() => {
                     setOpen(false);
                     onGuess(song.id);
