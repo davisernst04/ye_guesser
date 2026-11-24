@@ -41,6 +41,14 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --color-ye: var(--ye);
+  --color-miss: var(--miss);
+  --color-glass: var(--glass);
+  --color-glass-strong: var(--glass-strong);
+  --color-glass-edge: var(--glass-edge);
+  --color-label-2: var(--label-2);
+  --color-label-3: var(--label-3);
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 :root {
@@ -79,6 +87,15 @@
 }
 
 .dark {
+  /* Ye green is the brand. Miss red follows the iOS system red. */
+  --ye: #13f235;
+  --miss: #ff453a;
+  /* Translucent "material" layers, as on Apple platforms. */
+  --glass: rgb(255 255 255 / 0.08);
+  --glass-strong: rgb(255 255 255 / 0.14);
+  --glass-edge: rgb(255 255 255 / 0.1);
+  --label-2: rgb(235 235 245 / 0.62);
+  --label-3: rgb(235 235 245 / 0.32);
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -136,4 +153,20 @@
   from {
     opacity: 0;
   }
+}
+
+/* The blurred cover behind the player drifts slowly, like Apple Music's animated backgrounds. */
+@keyframes ambient-drift {
+  0% { transform: scale(1.6) rotate(0deg); }
+  50% { transform: scale(1.9) rotate(180deg); }
+  100% { transform: scale(1.6) rotate(360deg); }
+}
+
+@layer utilities {
+  .animate-ambient { animation: ambient-drift 90s linear infinite; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-ambient { animation: none; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; }
 }

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Play, Square } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { AnimatePresence, motion } from "motion/react";
+import { Loader2, Pause, Play, Rewind } from "lucide-react";
 import { FULL_CLIP_SECONDS, GUESS_TIMES } from "@/lib/game";
 
 type Props = {
@@ -10,9 +10,21 @@ type Props = {
   token: string;
   seconds: number;
   autoPlay?: boolean;
+  onPlayingChange?: (playing: boolean) => void;
+  /** Small label in the middle under the bar, where Apple Music shows "Dolby Atmos". */
+  label: string;
+  /** Control to the right of the play button, such as Skip. */
+  after?: React.ReactNode;
 };
 
-export default function AudioPlayer({ token, seconds, autoPlay = false }: Props) {
+const time = (s: number) => `0:${String(Math.floor(s)).padStart(2, "0")}`;
+const percent = (s: number) => `${(s / FULL_CLIP_SECONDS) * 100}%`;
+
+/** A plain white glyph button, like the transport controls in Apple Music. */
+export const glyphButton =
+  "grid place-items-center rounded-full text-white transition-[transform,background-color,opacity] duration-200 ease-spring outline-none hover:bg-white/10 focus-visible:ring-[3px] focus-visible:ring-ye/60 active:scale-85 active:bg-white/15 disabled:opacity-30";
+
+export default function AudioPlayer({ token, seconds, autoPlay = false, onPlayingChange, label, after }: Props) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [src, setSrc] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -49,22 +61,41 @@ export default function AudioPlayer({ token, seconds, autoPlay = false }: Props)
     if (autoPlay && src) audioRef.current?.play().catch(() => {});
   }, [autoPlay, src]);
 
-  function toggle() {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (playing) {
-      audio.pause();
-      audio.currentTime = 0;
-    } else {
-      audio.currentTime = 0;
-      audio.play().catch(() => setFailed(true));
-    }
+  useEffect(() => onPlayingChange?.(playing), [playing, onPlayingChange]);
+
+  // timeupdate fires only a few times a second, so follow the playhead each frame instead.
+  useEffect(() => {
+    if (!playing) return;
+    let frame = 0;
+    const tick = () => {
+      setPosition(audioRef.current?.currentTime ?? 0);
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [playing]);
+
+  function play() {
+    audioRef.current?.play().catch(() => setFailed(true));
   }
 
-  const percent = (s: number) => `${(s / FULL_CLIP_SECONDS) * 100}%`;
+  function toggle() {
+    if (playing) audioRef.current?.pause();
+    else play();
+  }
+
+  function restart() {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.currentTime = 0;
+    setPosition(0);
+    play();
+  }
+
+  const icon = !src && !failed ? "loading" : playing ? "pause" : "play";
 
   return (
-    <div className="w-full space-y-2">
+    <div className="w-full">
       {src && (
         <audio
           ref={audioRef}
@@ -76,37 +107,59 @@ export default function AudioPlayer({ token, seconds, autoPlay = false }: Props)
             setPlaying(false);
             setPosition(0);
           }}
-          onTimeUpdate={(e) => setPosition(e.currentTarget.currentTime)}
         />
       )}
-      <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted" aria-hidden>
-        <div className="absolute inset-y-0 left-0 bg-primary/30" style={{ width: percent(seconds) }} />
-        <div className="absolute inset-y-0 left-0 bg-primary" style={{ width: percent(position) }} />
+
+      {/* The unlocked part of the 30 s preview is lighter; ticks mark where each skip unlocks more. */}
+      <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-white/20" aria-hidden>
+        <div
+          className="absolute inset-y-0 left-0 rounded-full bg-white/35 transition-[width] duration-700 ease-spring"
+          style={{ width: percent(seconds) }}
+        />
+        <div className="absolute inset-y-0 left-0 rounded-full bg-white/90" style={{ width: percent(position) }} />
         {GUESS_TIMES.slice(0, -1).map((t) => (
-          <div key={t} className="absolute inset-y-0 w-px bg-background" style={{ left: percent(t) }} />
+          <div key={t} className="absolute inset-y-0 w-0.5 bg-black/40" style={{ left: percent(t) }} />
         ))}
       </div>
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>0:00</span>
-        <Button
-          onClick={toggle}
-          variant="outline"
-          size="icon"
-          className="size-12 rounded-full"
-          disabled={!src}
-          aria-label={playing ? "Stop" : `Play ${seconds} second clip`}
-        >
-          {!src && !failed ? (
-            <Loader2 className="size-5 animate-spin" />
-          ) : playing ? (
-            <Square className="size-5" />
-          ) : (
-            <Play className="size-5" />
-          )}
-        </Button>
-        <span>0:{String(seconds).padStart(2, "0")}</span>
+      <div className="mt-1.5 grid grid-cols-[1fr_auto_1fr] items-center text-[11px] text-white/55 tabular-nums">
+        <span>{time(position)}</span>
+        <span className="text-[10px] tracking-wide text-white/70">{label}</span>
+        <span className="text-right">-{time(Math.max(0, seconds - position))}</span>
       </div>
-      {failed && <p className="text-center text-xs text-red-500">Audio unavailable. Try again later.</p>}
+
+      <div className="mt-5 grid grid-cols-3 items-center justify-items-center">
+        <button type="button" onClick={restart} disabled={!src} aria-label="Play from the start" className={`${glyphButton} size-14`}>
+          <Rewind className="size-8" fill="currentColor" strokeWidth={0} />
+        </button>
+        <button
+          type="button"
+          onClick={toggle}
+          disabled={!src}
+          aria-label={playing ? "Pause" : `Play ${seconds} second clip`}
+          className={`${glyphButton} size-20`}
+        >
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span
+              key={icon}
+              initial={{ scale: 0.4, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.4, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              className="grid place-items-center"
+            >
+              {icon === "loading" ? (
+                <Loader2 className="size-9 animate-spin" />
+              ) : icon === "pause" ? (
+                <Pause className="size-12" fill="currentColor" strokeWidth={0} />
+              ) : (
+                <Play className="size-12" fill="currentColor" strokeWidth={0} />
+              )}
+            </motion.span>
+          </AnimatePresence>
+        </button>
+        {after}
+      </div>
+      {failed && <p className="mt-3 text-center text-xs text-miss">Audio unavailable. Try again later.</p>}
     </div>
   );
 }
