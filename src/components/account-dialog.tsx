@@ -142,7 +142,7 @@ function AlbumWall() {
 /** The avatar with the login provider's logo on its corner. */
 function ProviderAvatar({ profile }: { profile: Profile }) {
   return (
-    <span className="relative">
+    <span className="relative block">
       <Avatar profile={profile} className="size-16 text-3xl ring-4 ring-neutral-900" />
       {profile.provider && (
         <span
@@ -316,7 +316,7 @@ export function AccountDialog({ account, open, onOpenChange, onChange, next }: P
         setShowPrivacy(false);
       }}
     >
-      <DialogContent className={user ? "sm:max-w-sm" : "gap-0 sm:max-w-[35rem]"}>
+      <DialogContent className={user ? undefined : "gap-0 sm:max-w-[35rem]"}>
         {!user ? (
           <>
             <AlbumWall />
