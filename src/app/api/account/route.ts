@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import type { Account } from "@/lib/account";
-import { deleteAccount, loadAccount } from "@/lib/server/accounts";
-import { accountsEnabled, authClient, currentUserId } from "@/lib/server/supabase";
+import { deleteAccount, loadResults } from "@/lib/server/accounts";
+import { accountsEnabled, authClient, currentUser, currentUserId } from "@/lib/server/supabase";
 
 const noStore = { headers: { "Cache-Control": "no-store" } };
 
 export async function GET() {
-  const userId = await currentUserId();
-  const account: Account = userId
-    ? { enabled: true, user: await loadAccount(userId) }
+  const user = await currentUser();
+  const account: Account = user
+    ? { enabled: true, user: { ...user.profile, results: await loadResults(user.id) } }
     : { enabled: accountsEnabled, user: null };
   return NextResponse.json(account, noStore);
 }

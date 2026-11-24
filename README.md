@@ -8,7 +8,7 @@ Browser game inspired by Wordle, built around identifying Kanye West tracks from
 - **Unlimited:** random songs, as many as you want. They don't count toward your stats.
 - You get 6 guesses. Each miss or skip unlocks more of the clip: 1, 3, 5, 10, 20, then 30 seconds.
 - Stats, streaks and a share button (`Ye Guesser #327 🟥⬛🟩⬜⬜⬜ 🔥12`). Guests keep stats in the browser.
-- Optional login with Google or Discord saves stats to your account, with an optional username.
+- Optional login with Google or Discord saves stats to your account and shows your Google or Discord name and picture.
   On your first login, your guest stats move into the new account. An account that already has
   stats keeps its own. "Delete account" removes everything.
 

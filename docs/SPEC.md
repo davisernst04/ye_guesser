@@ -42,12 +42,14 @@ or make money.
 
 - Guests can play fully. Guest stats are kept in the browser.
 - Login: Google and Discord, through Supabase Auth. No email or password in v1.
-- After login, the player can pick an optional username. It must be unique and pass
-  a word filter. It shows in the header and can be added to the share text.
+- After login, the account shows the name, email and picture that Google or Discord
+  sends (plus the Discord username). Only the player sees them. No custom usernames
+  for now.
 - On first login to a new account, guest stats and today's game move into the
   account. An account that already has history keeps its own stats. Guest stats are
   dropped, never merged.
-- Stored data: the provider user ID, the username, and game results. Nothing else.
+- Stored data: the provider user ID and game results. Supabase Auth also keeps the
+  provider profile. The game reads it from the login token and does not copy it.
 - A "delete my account" button removes all of it. A short privacy note explains this.
 - Database rules stop players from writing their own results. Only the server writes
   them.

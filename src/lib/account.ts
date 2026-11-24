@@ -2,10 +2,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { clearGuestResults, guestProofs, type Results } from "@/lib/stats";
 
+/** What the login provider (Google or Discord) sent. The server does not store it. */
+export type Profile = {
+  provider: "google" | "discord" | null;
+  name: string | null;
+  email: string | null;
+  /** Discord username. Null for Google. */
+  handle: string | null;
+  avatarUrl: string | null;
+};
+
 export type Account = {
   /** False when the server has no Supabase setup: guest play only. */
   enabled: boolean;
-  user: { username: string | null; results: Results } | null;
+  user: (Profile & { results: Results }) | null;
 };
 
 async function fetchAccount(): Promise<Account> {
