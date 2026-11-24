@@ -48,8 +48,11 @@ or make money.
 - On first login to a new account, guest stats and today's game move into the
   account. An account that already has history keeps its own stats. Guest stats are
   dropped, never merged.
-- Stored data: the provider user ID and game results. Supabase Auth also keeps the
+- Stored data: the provider user ID, game results and favourite albums. Supabase Auth also keeps the
   provider profile. The game reads it from the login token and does not copy it.
+- Favourite albums: a player can pick up to 4 of the game's albums, like a
+  Letterboxd top 4. The account card shows them as a fan of covers, with empty
+  sleeves for the rest. Only the server writes them, and it accepts only real albums.
 - A "delete my account" button removes all of it. A short privacy note explains this.
 - Database rules stop players from writing their own results. Only the server writes
   them.
