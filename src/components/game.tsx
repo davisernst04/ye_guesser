@@ -9,6 +9,7 @@ import AudioPlayer, { glyphButton } from "@/components/audio-player";
 import { SongPicker } from "@/components/guess";
 import { StatsDialog } from "@/components/stats-dialog";
 import { FanNote } from "@/components/fan-note";
+import { ModeSwitch } from "@/components/mode-switch";
 import { AccountDialog, Avatar } from "@/components/account-dialog";
 import { Ambient, Stage } from "@/components/now-playing";
 import { useAccount } from "@/lib/account";
@@ -25,9 +26,6 @@ import {
 import { computeStats, loadJson, loadResults, recordResult, saveJson, shareText } from "@/lib/stats";
 
 type Saved = GameResponse;
-
-// Daily sits left of Unlimited in the toggle, so the screen slides that way (see game-loader.tsx).
-const slideTo = (mode: Mode) => [mode === "unlimited" ? "mode-left" : "mode-right"];
 
 async function post(path: string, body: unknown): Promise<GameResponse> {
   const res = await fetch(path, {
@@ -204,28 +202,7 @@ export default function Game({ mode }: { mode: Mode }) {
           <Link href="/" className="font-custom text-xl text-ye transition-opacity hover:opacity-80">
             Ye Guesser
           </Link>
-          <nav className="flex rounded-full bg-white/10 p-0.5 text-xs backdrop-blur-xl">
-            {(["daily", "unlimited"] as const).map((m) => {
-              const label = m === "daily" ? "DAILY" : "UNLIMITED";
-              return mode === m ? (
-                // The pill glides to the other tab when the mode changes.
-                <ViewTransition key={m} name="mode-pill">
-                  <span aria-current="page" className="rounded-full bg-white/90 px-3 py-1.5 text-black">
-                    {label}
-                  </span>
-                </ViewTransition>
-              ) : (
-                <Link
-                  key={m}
-                  href={m === "daily" ? "/play" : "/unlimited"}
-                  transitionTypes={slideTo(m)}
-                  className="rounded-full px-3 py-1.5 text-white/60 transition-[color,transform] duration-200 ease-spring hover:text-white active:scale-95"
-                >
-                  {label}
-                </Link>
-              );
-            })}
-          </nav>
+          <ModeSwitch mode={mode} />
         </header>
         </ViewTransition>
 
