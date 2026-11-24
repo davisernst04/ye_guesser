@@ -30,6 +30,9 @@ export default function AudioPlayer({ token, seconds, autoPlay = false, onPlayin
   const [failed, setFailed] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [position, setPosition] = useState(0);
+  // Where the finger is while it drags the bar. The audio seeks only on release, like Apple Music.
+  const [scrub, setScrub] = useState<number | null>(null);
+  const shown = scrub ?? position;
 
   // The parent keys this component by token, so each new token gets a fresh clip.
   useEffect(() => {
@@ -92,6 +95,33 @@ export default function AudioPlayer({ token, seconds, autoPlay = false, onPlayin
     play();
   }
 
+  function seek(to: number) {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.currentTime = to;
+    setPosition(to);
+  }
+
+  /** The time under the pointer, kept inside the unlocked part of the clip. */
+  function timeAt(e: React.PointerEvent<HTMLDivElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const t = ((e.clientX - rect.left) / rect.width) * FULL_CLIP_SECONDS;
+    return Math.min(seconds, Math.max(0, t));
+  }
+
+  function onScrubKey(e: React.KeyboardEvent) {
+    const step = seconds <= 5 ? 0.5 : 1;
+    const to =
+      e.key === "ArrowLeft" || e.key === "ArrowDown" ? shown - step
+      : e.key === "ArrowRight" || e.key === "ArrowUp" ? shown + step
+      : e.key === "Home" ? 0
+      : e.key === "End" ? seconds
+      : null;
+    if (to === null) return;
+    e.preventDefault();
+    seek(Math.min(seconds, Math.max(0, to)));
+  }
+
   const icon = !src && !failed ? "loading" : playing ? "pause" : "play";
 
   return (
@@ -110,21 +140,48 @@ export default function AudioPlayer({ token, seconds, autoPlay = false, onPlayin
         />
       )}
 
-      {/* The unlocked part of the 30 s preview is lighter; ticks mark where each skip unlocks more. */}
-      <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-white/20" aria-hidden>
+      {/* The unlocked part of the 30 s preview is lighter; ticks mark where each skip unlocks more.
+          Drag or tap the bar to scrub, but only inside the unlocked part. The tall wrapper is the touch target. */}
+      <div
+        role="slider"
+        tabIndex={src ? 0 : -1}
+        aria-label="Playback position"
+        aria-valuemin={0}
+        aria-valuemax={seconds}
+        aria-valuenow={Math.round(shown * 10) / 10}
+        aria-valuetext={`${time(shown)} of ${time(seconds)}`}
+        aria-disabled={!src}
+        onKeyDown={onScrubKey}
+        onPointerDown={(e) => {
+          if (!src) return;
+          e.currentTarget.setPointerCapture(e.pointerId);
+          setScrub(timeAt(e));
+        }}
+        onPointerMove={(e) => scrub !== null && setScrub(timeAt(e))}
+        onPointerUp={() => {
+          if (scrub !== null) seek(scrub);
+          setScrub(null);
+        }}
+        onPointerCancel={() => setScrub(null)}
+        className="-my-3 flex h-8 w-full cursor-pointer touch-none items-center rounded-full outline-none select-none focus-visible:ring-[3px] focus-visible:ring-ye/60 aria-disabled:cursor-default"
+      >
         <div
-          className="absolute inset-y-0 left-0 rounded-full bg-white/35 transition-[width] duration-700 ease-spring"
-          style={{ width: percent(seconds) }}
-        />
-        <div className="absolute inset-y-0 left-0 rounded-full bg-white/90" style={{ width: percent(position) }} />
-        {GUESS_TIMES.slice(0, -1).map((t) => (
-          <div key={t} className="absolute inset-y-0 w-0.5 bg-black/40" style={{ left: percent(t) }} />
-        ))}
+          className={`relative w-full overflow-hidden rounded-full bg-white/20 transition-[height] duration-200 ease-spring ${scrub !== null ? "h-3" : "h-1.5"}`}
+        >
+          <div
+            className="absolute inset-y-0 left-0 rounded-full bg-white/35 transition-[width] duration-700 ease-spring"
+            style={{ width: percent(seconds) }}
+          />
+          <div className="absolute inset-y-0 left-0 rounded-full bg-white/90" style={{ width: percent(shown) }} />
+          {GUESS_TIMES.slice(0, -1).map((t) => (
+            <div key={t} className="absolute inset-y-0 w-0.5 bg-black/40" style={{ left: percent(t) }} />
+          ))}
+        </div>
       </div>
       <div className="mt-1.5 grid grid-cols-[1fr_auto_1fr] items-center text-[11px] text-white/55 tabular-nums">
-        <span>{time(position)}</span>
+        <span>{time(shown)}</span>
         <span className="text-[10px] tracking-wide text-white/70">{label}</span>
-        <span className="text-right">-{time(Math.max(0, seconds - position))}</span>
+        <span className="text-right">-{time(Math.max(0, seconds - shown))}</span>
       </div>
 
       <div className="mt-5 grid grid-cols-3 items-center justify-items-center">
