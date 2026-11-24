@@ -22,7 +22,7 @@ const percent = (s: number) => `${(s / FULL_CLIP_SECONDS) * 100}%`;
 
 /** A plain white glyph button, like the transport controls in Apple Music. */
 export const glyphButton =
-  "grid place-items-center rounded-full text-white transition-[transform,background-color,opacity] duration-200 ease-spring outline-none hover:bg-white/10 focus-visible:ring-[3px] focus-visible:ring-ye/60 active:scale-85 active:bg-white/15 disabled:opacity-30";
+  "tooltip grid place-items-center rounded-full text-white transition-[transform,background-color,opacity] duration-200 ease-spring outline-none hover:bg-white/10 focus-visible:ring-[3px] focus-visible:ring-ye/60 active:scale-85 active:bg-white/15 disabled:opacity-30";
 
 export default function AudioPlayer({ token, seconds, autoPlay = false, onPlayingChange, label, after }: Props) {
   const audioRef = useRef<HTMLAudioElement>(null);
