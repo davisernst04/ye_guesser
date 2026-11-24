@@ -160,14 +160,10 @@
 }
 
 /* Switching between Daily and Unlimited (components/game-loader.tsx). The game
-   slides toward the tab you picked, the toggle pill glides across, the header
-   stays put and the background crossfades. */
+   slides toward the tab you picked, the header (with its toggle, see
+   components/mode-switch.tsx) stays put and the background crossfades. */
 ::view-transition {
   pointer-events: none;
-}
-::view-transition-group(mode-pill) {
-  animation-duration: 400ms;
-  animation-timing-function: var(--ease-spring);
 }
 ::view-transition-group(game-header) {
   animation: none;
