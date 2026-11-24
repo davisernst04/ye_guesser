@@ -6,6 +6,7 @@ import { LogOut, Trash2, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Account } from "@/lib/account";
+import { cn } from "@/lib/utils";
 
 type Props = {
   account: Account;
@@ -45,7 +46,7 @@ export function Avatar({ name, className = "" }: { name: string | null | undefin
   return (
     <span
       aria-hidden
-      className={`grid shrink-0 place-items-center rounded-full bg-ye font-bold text-black uppercase ${className}`}
+      className={cn("grid shrink-0 place-items-center rounded-full bg-ye font-bold text-black uppercase", className)}
     >
       {name ? name[0] : <UserRound className="size-[55%]" />}
     </span>

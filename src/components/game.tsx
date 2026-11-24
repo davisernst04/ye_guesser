@@ -314,7 +314,7 @@ export default function Game({ mode }: { mode: Mode }) {
                 aria-label={user?.username ? `Account: ${user.username}` : "Account"}
                 className={`${glyphButton} size-11`}
               >
-                <Avatar name={user?.username} className={`size-7 text-xs ${user ? "" : "bg-transparent text-white/80"}`} />
+                <Avatar name={user?.username} className={`size-7 text-xs ${user ? "bg-white/90" : "bg-transparent text-white/80"}`} />
               </button>
             ) : (
               <span />
