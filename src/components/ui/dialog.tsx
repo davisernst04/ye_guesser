@@ -47,7 +47,7 @@ function DialogOverlay({
 }
 
 /**
- * Lets the phone bottom sheet be dragged down to close, like a native sheet.
+ * Lets the bottom sheet be dragged down to close on touch screens, like a native sheet.
  * A drag starts only on a downward swipe while nothing under the finger is
  * scrolled, so lists inside the sheet still scroll normally.
  */
@@ -70,8 +70,7 @@ function useSwipeToClose(
     const onStart = (event: TouchEvent) => {
       decided = dragging = false
       offset = 0
-      // Wider screens show a centered card, not a sheet.
-      canDrag = event.touches.length === 1 && !window.matchMedia("(min-width: 40rem)").matches
+      canDrag = event.touches.length === 1
       for (let el = event.target as HTMLElement | null; canDrag && el && el !== sheet.parentElement; el = el.parentElement) {
         if (el.scrollTop > 0) canDrag = false
       }
@@ -156,18 +155,19 @@ function DialogContent({
         data-slot="dialog-content"
         ref={setRefs}
         className={cn(
-          // A bottom sheet on phones, a centered card on wider screens.
-          "fixed inset-x-0 bottom-0 z-50 grid max-h-[92dvh] w-full gap-5 overflow-y-auto rounded-t-[28px] border-t border-glass-edge bg-neutral-900/85 px-5 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-2xl ease-spring outline-none",
+          // A bottom sheet on every screen. Wider screens center it with auto margins,
+          // because a translate would fight the slide animation.
+          "fixed inset-x-0 bottom-0 z-50 mx-auto grid max-h-[92dvh] w-full gap-5 overflow-y-auto rounded-t-[28px] border-t border-glass-edge bg-neutral-900/85 px-5 pt-9 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-2xl ease-spring outline-none sm:max-w-md sm:border-x sm:px-6",
           "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom data-[state=open]:duration-500 data-[state=closed]:duration-300",
-          "sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[28px] sm:border sm:p-6",
-          "sm:data-[state=open]:slide-in-from-bottom-8 sm:data-[state=closed]:slide-out-to-bottom-8 sm:data-[state=open]:fade-in-0 sm:data-[state=closed]:fade-out-0 sm:data-[state=open]:zoom-in-95 sm:data-[state=closed]:zoom-out-95",
           className
         )}
         {...props}
       >
-        <div aria-hidden className="mx-auto h-1.5 w-10 rounded-full bg-white/25 sm:hidden" />
+        {/* Floats, so content such as artwork can run to the top edge under it.
+            Mouse users get no handle, since only touch can drag the sheet. */}
+        <div aria-hidden className="absolute top-2 left-1/2 z-10 h-1.5 w-10 -translate-x-1/2 rounded-full bg-white/35 pointer-fine:hidden" />
         {children}
-        <DialogPrimitive.Close ref={closeRef} className="absolute top-4 right-4 grid size-8 place-items-center rounded-full bg-glass-strong text-label-2 transition-[transform,background-color] duration-200 ease-spring hover:bg-white/20 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ye/60 focus-visible:outline-none active:scale-90 [&_svg]:size-4">
+        <DialogPrimitive.Close ref={closeRef} className="absolute top-4 right-4 z-10 grid size-8 place-items-center rounded-full bg-black/35 text-label-2 backdrop-blur-md transition-[transform,background-color] duration-200 ease-spring hover:bg-white/20 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ye/60 focus-visible:outline-none active:scale-90 [&_svg]:size-4">
           <XIcon />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>

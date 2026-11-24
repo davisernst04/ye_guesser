@@ -124,6 +124,14 @@ export default function Game({ mode }: { mode: Mode }) {
   const returnPath = mode === "daily" ? "/play" : "/unlimited";
   // This account finished today's puzzle on another device, so this game wouldn't count.
   const playedElsewhere = mode === "daily" && view?.status === "playing" && user?.results[today] !== undefined;
+  // Today's finished daily game, which the stats dialog leads with.
+  const recap = view?.mode === "daily" && view.status !== "playing" ? view : undefined;
+  // Guests keep stats only in this browser, so they see the login sheet in their place.
+  const guest = Boolean(account?.enabled && !user);
+  function openLogin() {
+    setStatsOpen(false);
+    setAccountOpen(true);
+  }
 
   async function share(view: GameView) {
     const text = shareText(view, stats.currentStreak, window.location.host);
@@ -280,7 +288,11 @@ export default function Game({ mode }: { mode: Mode }) {
           )}
 
           <nav className="mt-6 grid grid-cols-3 justify-items-center" aria-label="Player">
-            <button type="button" onClick={() => setStatsOpen(true)} aria-label="Stats" className={`${glyphButton} size-11 text-white/80`}>
+            <button
+              type="button"
+              // A guest still sees today's recap and share button, with a login row in place of the stats.
+              onClick={() => (guest && !recap ? openLogin() : setStatsOpen(true))}
+              aria-label="Stats" className={`${glyphButton} size-11 text-white/80`}>
               <BarChart3 className="size-[22px]" />
             </button>
             {account?.enabled ? (
@@ -314,8 +326,8 @@ export default function Game({ mode }: { mode: Mode }) {
         open={statsOpen}
         onOpenChange={setStatsOpen}
         highlight={view?.mode === "daily" && view.status === "won" ? view.guesses.length : undefined}
-        loginNext={account?.enabled && !user ? returnPath : undefined}
-        view={view?.mode === "daily" && view.status !== "playing" ? view : undefined}
+        onLogin={guest ? openLogin : undefined}
+        view={recap}
       >
         {shareButton}
       </StatsDialog>

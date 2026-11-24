@@ -2,9 +2,8 @@
 
 import Image from "next/image";
 import { motion } from "motion/react";
-import { Flame } from "lucide-react";
+import { ChevronRight, Flame } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { LoginButtons } from "@/components/account-dialog";
 import { GUESS_TIMES, MAX_GUESSES, coverUrl, type GameView } from "@/lib/game";
 import { RECENT_DAYS, type Stats } from "@/lib/stats";
 
@@ -14,8 +13,8 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   /** Guesses used in today's win, to highlight its bar. */
   highlight?: number;
-  /** Set for guests: the page to come back to after login. Shows the login prompt in place of the stats. */
-  loginNext?: string;
+  /** Set for guests: opens the login sheet. A login row takes the place of the stats. */
+  onLogin?: () => void;
   /** Today's finished daily game. When set, the dialog leads with its song. */
   view?: GameView;
   children?: React.ReactNode;
@@ -67,7 +66,7 @@ function Recap({ view }: { view: GameView & { answer: NonNullable<GameView["answ
   );
 }
 
-export function StatsDialog({ stats, open, onOpenChange, highlight, loginNext, view, children }: Props) {
+export function StatsDialog({ stats, open, onOpenChange, highlight, onLogin, view, children }: Props) {
   const max = Math.max(1, ...stats.distribution);
   const lit = stats.currentStreak > 0;
   const answer = view?.answer;
@@ -83,12 +82,17 @@ export function StatsDialog({ stats, open, onOpenChange, highlight, loginNext, v
 
         {view && answer && <Recap view={{ ...view, answer }} />}
 
-        {/* Guests keep stats only in this browser, so they get the login prompt instead. */}
-        {loginNext ? (
-          <section className="rounded-2xl bg-white/[0.06] p-4">
-            <p className="mb-3 font-bold">Log in to keep your streak</p>
-            <LoginButtons next={loginNext} compact />
-          </section>
+        {/* Guests keep stats only in this browser, so they get a way to log in instead. */}
+        {onLogin ? (
+          <button
+            type="button"
+            onClick={onLogin}
+            className="flex w-full items-center gap-3 rounded-2xl bg-white/[0.06] p-4 text-left transition-colors hover:bg-glass-strong"
+          >
+            <Flame className="size-6 text-label-3" />
+            <span className="flex-1 font-bold">Log in to keep your streak</span>
+            <ChevronRight className="size-5 text-label-3" />
+          </button>
         ) : (
           <>
             <section className="flex items-center justify-between gap-4 rounded-2xl bg-white/[0.06] px-4 py-3">
