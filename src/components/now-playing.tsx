@@ -28,7 +28,7 @@ export function Ambient({ cover }: { cover: string | null }) {
             fill
             sizes="120px"
             unoptimized={!!cover}
-            className="animate-ambient object-cover blur-3xl saturate-[1.8]"
+            className="scale-[1.75] object-cover blur-3xl saturate-[1.8]"
           />
         </motion.div>
       </AnimatePresence>
