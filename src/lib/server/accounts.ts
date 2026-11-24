@@ -1,5 +1,6 @@
 // Account data. Only the server writes it; see supabase/migrations.
 import "server-only";
+import { GAME_ALBUMS, MAX_FAVORITES } from "@/lib/covers";
 import { resultOf } from "@/lib/game";
 import type { Results } from "@/lib/stats";
 import { finishedDaily } from "@/lib/server/session";
@@ -9,6 +10,27 @@ export async function loadResults(userId: string): Promise<Results> {
   const { data, error } = await admin().from("results").select("puzzle, guesses").eq("user_id", userId);
   if (error) throw error;
   return Object.fromEntries(data.map((row) => [row.puzzle, row.guesses]));
+}
+
+export async function loadFavorites(userId: string): Promise<string[]> {
+  const { data, error } = await admin().from("favorites").select("albums").eq("user_id", userId).maybeSingle();
+  if (error) throw error;
+  return data?.albums ?? [];
+}
+
+const albumTitles = new Set(GAME_ALBUMS.map((album) => album.alt));
+
+/** Saves the player's favourite albums, in order. Returns false if the list isn't valid. */
+export async function saveFavorites(userId: string, albums: unknown): Promise<boolean> {
+  const valid =
+    Array.isArray(albums) &&
+    albums.length <= MAX_FAVORITES &&
+    new Set(albums).size === albums.length &&
+    albums.every((album) => albumTitles.has(album));
+  if (!valid) return false;
+  const { error } = await admin().from("favorites").upsert({ user_id: userId, albums });
+  if (error) throw error;
+  return true;
 }
 
 /** Saves results. A puzzle that already has a result keeps it. */
@@ -49,7 +71,7 @@ export async function importGuest(userId: string, tokens: unknown): Promise<void
   await saveResults(userId, results);
 }
 
-/** Deletes the auth user. The database deletes their results with it. */
+/** Deletes the auth user. The database deletes their results and favourites with it. */
 export async function deleteAccount(userId: string): Promise<void> {
   const { error } = await admin().auth.admin.deleteUser(userId);
   if (error) throw error;

@@ -15,7 +15,7 @@ export type Profile = {
 export type Account = {
   /** False when the server has no Supabase setup: guest play only. */
   enabled: boolean;
-  user: (Profile & { results: Results }) | null;
+  user: (Profile & { results: Results; /** Favourite album titles, in order. */ favorites: string[] }) | null;
 };
 
 async function fetchAccount(): Promise<Account> {
