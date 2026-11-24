@@ -56,6 +56,7 @@ export function clearGuestResults(): void {
 
 export type Stats = {
   played: number;
+  wins: number;
   winPercent: number;
   currentStreak: number;
   bestStreak: number;
@@ -94,6 +95,7 @@ export function computeStats(results: Results, today: number): Stats {
 
   return {
     played: puzzles.length,
+    wins,
     winPercent: puzzles.length ? Math.round((wins / puzzles.length) * 100) : 0,
     currentStreak,
     bestStreak,
