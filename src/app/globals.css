@@ -248,9 +248,9 @@
     padding: 4px 8px;
     border-radius: 6px;
     background: rgb(0 0 0 / 0.85);
-    color: var(--ye);
-    font-family: var(--font-custom);
-    font-size: 15px;
+    color: white;
+    font-family: var(--font-sans);
+    font-size: 12px;
     line-height: 1.2;
     white-space: nowrap;
     pointer-events: none;
