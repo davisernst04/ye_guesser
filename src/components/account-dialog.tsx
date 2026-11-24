@@ -94,6 +94,25 @@ function DiscordLogo() {
   );
 }
 
+/** Google and Discord login. `compact` puts them side by side. */
+export function LoginButtons({ next, compact = false }: { next: string; compact?: boolean }) {
+  const size = compact ? "default" : "lg";
+  return (
+    <div className={compact ? "grid grid-cols-2 gap-2" : "space-y-2.5"}>
+      <Button asChild size={size} className="w-full">
+        <a href={`/auth/login?provider=google&next=${next}`}>
+          <GoogleLogo /> {compact ? "Google" : "Continue with Google"}
+        </a>
+      </Button>
+      <Button asChild size={size} className="w-full bg-[#5865F2] text-white hover:bg-[#5865F2]/90">
+        <a href={`/auth/login?provider=discord&next=${next}`}>
+          <DiscordLogo /> {compact ? "Discord" : "Continue with Discord"}
+        </a>
+      </Button>
+    </div>
+  );
+}
+
 export function AccountDialog({ account, open, onOpenChange, onChange, next, shareName, onShareNameChange }: Props) {
   const user = account.user;
   const [username, setUsername] = useState(user?.username ?? "");
@@ -139,18 +158,7 @@ export function AccountDialog({ account, open, onOpenChange, onChange, next, sha
                 </DialogDescription>
               </DialogHeader>
             </div>
-            <div className="space-y-2.5">
-              <Button asChild size="lg" className="w-full">
-                <a href={`/auth/login?provider=google&next=${next}`}>
-                  <GoogleLogo /> Continue with Google
-                </a>
-              </Button>
-              <Button asChild size="lg" className="w-full bg-[#5865F2] text-white hover:bg-[#5865F2]/90">
-                <a href={`/auth/login?provider=discord&next=${next}`}>
-                  <DiscordLogo /> Continue with Discord
-                </a>
-              </Button>
-            </div>
+            <LoginButtons next={next} />
             <p className="px-1 text-center text-xs leading-relaxed text-label-2">
               On your first login, your stats from this browser move into the new account. An account that already has
               stats keeps its own.
