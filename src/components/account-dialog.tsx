@@ -96,7 +96,7 @@ function LoginButtons({ next }: { next: string }) {
         <a href={`/auth/login?provider=google&next=${next}`}>
           <GoogleLogo />
           <span>
-            <span className="max-sm:sr-only">Continue with </span>Google
+            <span className="sr-only">Continue with </span>Google
           </span>
         </a>
       </Button>
@@ -104,7 +104,7 @@ function LoginButtons({ next }: { next: string }) {
         <a href={`/auth/login?provider=discord&next=${next}`}>
           <DiscordLogo />
           <span>
-            <span className="max-sm:sr-only">Continue with </span>Discord
+            <span className="sr-only">Continue with </span>Discord
           </span>
         </a>
       </Button>
@@ -316,7 +316,7 @@ export function AccountDialog({ account, open, onOpenChange, onChange, next }: P
         setShowPrivacy(false);
       }}
     >
-      <DialogContent className={user ? undefined : "gap-0 sm:max-w-[35rem]"}>
+      <DialogContent className={user ? undefined : "gap-0"}>
         {!user ? (
           <>
             <AlbumWall />
