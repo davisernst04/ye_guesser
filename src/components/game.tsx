@@ -121,6 +121,8 @@ export default function Game({ mode }: { mode: Mode }) {
   const today = localPuzzle();
   const stats = computeStats(user ? user.results : results, today);
   const view = game?.view;
+  // Page to come back to after login.
+  const returnPath = mode === "daily" ? "/play" : "/unlimited";
   // This account finished today's puzzle on another device, so this game wouldn't count.
   const playedElsewhere = mode === "daily" && view?.status === "playing" && user?.results[today] !== undefined;
 
@@ -326,6 +328,8 @@ export default function Game({ mode }: { mode: Mode }) {
         open={statsOpen}
         onOpenChange={setStatsOpen}
         highlight={view?.mode === "daily" && view.status === "won" ? view.guesses.length : undefined}
+        loginNext={account?.enabled && !user ? returnPath : undefined}
+        view={view?.mode === "daily" && view.status !== "playing" ? view : undefined}
       >
         {shareButton}
       </StatsDialog>
@@ -337,7 +341,7 @@ export default function Game({ mode }: { mode: Mode }) {
           open={accountOpen}
           onOpenChange={setAccountOpen}
           onChange={refreshAccount}
-          next={mode === "daily" ? "/play" : "/unlimited"}
+          next={returnPath}
           shareName={shareName}
           onShareNameChange={(value) => {
             setShareName(value);
