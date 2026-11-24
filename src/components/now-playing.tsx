@@ -40,11 +40,11 @@ export function Ambient({ cover }: { cover: string | null }) {
 /**
  * The square at the top of the player. It shows the album art, or the guess list when
  * the queue button is on, like Apple Music's "Playing Next" view.
- * The art casts a deeper shadow while playing and flips over on the reveal.
+ * Like Apple Music, the art fills the width while audio plays and shrinks back when paused.
+ * It flips over on the reveal.
  */
 export function Stage({ view, playing, queue }: { view: GameView; playing: boolean; queue: boolean }) {
   const answer = view.answer;
-  const big = playing || view.status !== "playing";
   return (
     // Full column width, so the cover lines up with the 30 s track bar below it.
     <div className="relative aspect-square w-full [perspective:1200px]">
@@ -64,11 +64,11 @@ export function Stage({ view, playing, queue }: { view: GameView; playing: boole
         ) : (
           <motion.div
             key="art"
-            className={`absolute inset-0 rounded-xl ${big ? "shadow-[0_30px_60px_-12px_rgb(0_0_0/0.7)]" : "shadow-[0_16px_32px_-12px_rgb(0_0_0/0.5)]"} transition-shadow duration-500`}
+            className={`absolute inset-0 rounded-xl ${playing ? "shadow-[0_30px_60px_-12px_rgb(0_0_0/0.7)]" : "shadow-[0_16px_32px_-12px_rgb(0_0_0/0.5)]"} transition-shadow duration-500`}
             initial={{ opacity: 0, scale: 0.6 }}
-            animate={{ opacity: 1, scale: 1 }}
+            animate={{ opacity: 1, scale: playing ? 1 : 0.8 }}
             exit={{ opacity: 0, scale: 0.6 }}
-            transition={{ type: "spring", stiffness: 220, damping: 22 }}
+            transition={{ type: "spring", stiffness: 260, damping: 24 }}
           >
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
