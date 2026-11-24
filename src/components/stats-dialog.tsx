@@ -1,9 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronRight, Flame } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { GUESS_TIMES, MAX_GUESSES, coverUrl, type GameView } from "@/lib/game";
+import { GUESS_TIMES, MAX_GUESSES, clipPercent, coverUrl, type GameView } from "@/lib/game";
 import { RECENT_DAYS, type Stats } from "@/lib/stats";
 
 type Props = {
@@ -12,14 +11,15 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   /** Guesses used in today's win, to highlight its track. */
   highlight?: number;
-  /** Set for guests: opens the login sheet. A login row takes the place of the stats. */
+  /**
+   * Set for guests, who only see this dialog when a daily game ends: opens the login sheet.
+   * A guest recap and a login strip take the place of the stats.
+   */
   onLogin?: () => void;
   /** Today's finished daily game. When set, the dialog leads with its song. */
   view?: GameView;
   children?: React.ReactNode;
 };
-
-const ORDINALS = ["first", "second", "third", "fourth", "fifth", "sixth"];
 
 function dayLabel(result: number | null, daysAgo: number) {
   const when = daysAgo === 0 ? "Today" : daysAgo === 1 ? "Yesterday" : `${daysAgo} days ago`;
@@ -27,8 +27,16 @@ function dayLabel(result: number | null, daysAgo: number) {
   return result > 0 ? `${when}: solved in ${result}` : `${when}: missed`;
 }
 
+type Finished = GameView & { answer: NonNullable<GameView["answer"]> };
+
+function guessColor(guess: GameView["guesses"][number] | undefined) {
+  if (!guess) return "bg-glass-strong";
+  if (guess.correct) return "bg-ye";
+  return guess.songId === null ? "bg-white/40" : "bg-miss";
+}
+
 /** Today's song, styled like a now-playing header, with one pill per guess. */
-function Recap({ view }: { view: GameView & { answer: NonNullable<GameView["answer"]> } }) {
+function Recap({ view }: { view: Finished }) {
   return (
     <section className="flex items-end gap-4 pt-2 pr-10">
       <Image
@@ -43,39 +51,120 @@ function Recap({ view }: { view: GameView & { answer: NonNullable<GameView["answ
         <p className="text-xs text-label-2">Daily #{view.puzzle}</p>
         <p className="my-1 line-clamp-2 text-2xl leading-tight tracking-tight">{view.answer.title}</p>
         <div aria-hidden className="flex gap-1">
-          {Array.from({ length: MAX_GUESSES }, (_, i) => {
-            const guess = view.guesses[i];
-            const color = !guess
-              ? "bg-glass-strong"
-              : guess.correct
-                ? "bg-ye"
-                : guess.songId === null
-                  ? "bg-white/40"
-                  : "bg-miss";
-            return <span key={i} className={`h-1.5 w-5 rounded-full ${color}`} />;
-          })}
+          {Array.from({ length: MAX_GUESSES }, (_, i) => (
+            <span key={i} className={`h-1.5 w-5 rounded-full ${guessColor(view.guesses[i])}`} />
+          ))}
         </div>
       </div>
     </section>
   );
 }
 
+/** Today's result, stacked and fading like the type on The Life of Pablo cover. */
+function Verdict({ view }: { view: Finished }) {
+  const won = view.status === "won";
+  const verdict = won ? `Got it / in ${view.guesses.length}` : "Missed / it";
+  return (
+    <p className={`text-[40px] leading-[0.92] tracking-[-0.045em] uppercase ${won ? "text-ye" : "text-miss"}`}>
+      <span className="sr-only">{won ? `Got it in ${view.guesses.length}` : "Missed it"}</span>
+      <span aria-hidden className="block">{verdict}</span>
+      <span aria-hidden className="block opacity-45">{verdict}</span>
+      <span aria-hidden className="block opacity-20">{verdict}</span>
+    </p>
+  );
+}
+
+/** Guest recap: the song, the verdict and the guesses on the clip's real 30 s timeline. */
+function GuestRecap({ view }: { view: Finished }) {
+  const won = view.status === "won";
+  const end = view.guesses.length - 1;
+  return (
+    <>
+      <section className="flex items-center gap-3 pr-10">
+        <Image
+          src={coverUrl(view.answer.cover, 120)}
+          alt=""
+          width={56}
+          height={56}
+          unoptimized
+          className="size-14 shrink-0 rounded-lg"
+        />
+        <div className="min-w-0">
+          <p className="text-xs font-normal text-label-2">
+            Daily #{view.puzzle}
+            {!won && " · the song was"}
+          </p>
+          <p className="truncate text-lg">{view.answer.title}</p>
+        </div>
+      </section>
+
+      <Verdict view={view} />
+
+      <div aria-hidden className="relative">
+        <div className="relative h-2 overflow-hidden rounded-full bg-glass">
+          {view.guesses.map((guess, i) => {
+            const from = GUESS_TIMES[i - 1] ?? 0;
+            const to = GUESS_TIMES[i]!;
+            return (
+              <span
+                key={i}
+                className={`absolute inset-y-0 ${guessColor(guess)}`}
+                style={{ left: clipPercent(from), width: clipPercent(to - from) }}
+              />
+            );
+          })}
+          {GUESS_TIMES.slice(0, -1).map((t) => (
+            <span key={t} className="absolute inset-y-0 -ml-px w-0.5 bg-neutral-900" style={{ left: clipPercent(t) }} />
+          ))}
+        </div>
+        {won && (
+          <span
+            className="absolute -top-[5px] size-[18px] -translate-x-1/2 rounded-full bg-white ring-4 ring-ye/25"
+            style={{ left: clipPercent(GUESS_TIMES[end]!) }}
+          />
+        )}
+        <div className="relative mt-1.5 h-3.5 text-[11px] font-normal text-label-3 tabular-nums">
+          {GUESS_TIMES.map((t, i) => (
+            <span
+              key={t}
+              className={`absolute ${i === MAX_GUESSES - 1 ? "-translate-x-full" : "-translate-x-1/2"} ${
+                won && i === end ? "font-bold text-ye" : ""
+              }`}
+              style={{ left: clipPercent(t) }}
+            >
+              {t}s
+            </span>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/** Asks a guest to log in. After a win it shows the streak that login keeps alive. */
+function LoginStrip({ streak, onLogin }: { streak: number; onLogin: () => void }) {
+  return (
+    <div className="flex items-center gap-3 rounded-[18px] bg-glass py-3 pr-3 pl-4">
+      {streak > 0 && <span className="text-[30px] leading-none tracking-tight tabular-nums">{streak}</span>}
+      <p className="min-w-0 flex-1 text-[13px] leading-snug font-normal text-label-2">
+        <span className="block text-sm font-bold text-foreground">{streak > 0 ? "Day streak" : "Your stats"}</span>
+        {streak > 0 ? "Log in to keep it alive" : "Log in to save every result"}
+      </p>
+      <button
+        type="button"
+        onClick={onLogin}
+        className="h-9 shrink-0 rounded-full bg-white px-4 text-sm text-black transition-colors outline-none hover:bg-white/85 focus-visible:ring-[3px] focus-visible:ring-ye/60"
+      >
+        Log in
+      </button>
+    </div>
+  );
+}
+
 /** The stats as one sentence of liner notes. */
-function Credits({ stats, view }: { stats: Stats; view?: GameView }) {
-  const won = view?.status === "won";
+function Credits({ stats }: { stats: Stats }) {
   return (
     <p className="text-sm leading-relaxed font-normal text-label-2">
-      {view?.answer &&
-        (won ? (
-          <>
-            Solved at <b className="text-ye">{GUESS_TIMES[view.guesses.length - 1]}s</b> on the{" "}
-            {ORDINALS[view.guesses.length - 1]} guess.{" "}
-          </>
-        ) : (
-          <>
-            <b className="text-miss">Missed</b> today&apos;s song.{" "}
-          </>
-        ))}
       {stats.currentStreak > 0 ? (
         <>
           <b className="text-foreground">{stats.currentStreak}-day streak</b>, best {stats.bestStreak}.
@@ -104,22 +193,22 @@ export function StatsDialog({ stats, open, onOpenChange, highlight, onLogin, vie
           <DialogDescription>Daily games only</DialogDescription>
         </DialogHeader>
 
-        {view && answer && <Recap view={{ ...view, answer }} />}
+        {view &&
+          answer &&
+          (onLogin ? (
+            <GuestRecap view={{ ...view, answer }} />
+          ) : (
+            <>
+              <Recap view={{ ...view, answer }} />
+              <Verdict view={{ ...view, answer }} />
+            </>
+          ))}
 
-        {/* Guests keep stats only in this browser, so they get a way to log in instead. */}
         {onLogin ? (
-          <button
-            type="button"
-            onClick={onLogin}
-            className="flex w-full items-center gap-3 rounded-2xl bg-white/[0.06] p-4 text-left transition-colors hover:bg-glass-strong"
-          >
-            <Flame className="size-6 text-label-3" />
-            <span className="flex-1 font-bold">Log in to keep your streak</span>
-            <ChevronRight className="size-5 text-label-3" />
-          </button>
+          <LoginStrip streak={view?.status === "won" ? stats.currentStreak : 0} onLogin={onLogin} />
         ) : (
           <>
-            <Credits stats={stats} view={view} />
+            <Credits stats={stats} />
 
             {/* Wins by clip length, laid out like the tracklist on an album's back cover. */}
             <section aria-label="Solved at">

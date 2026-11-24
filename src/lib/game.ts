@@ -9,6 +9,9 @@ export const GUESS_TIMES = [1, 3, 5, 10, 20, 30] as const;
 export const MAX_GUESSES = GUESS_TIMES.length;
 export const FULL_CLIP_SECONDS = 30;
 
+/** Position of a time in the clip, as a CSS percentage of the 30 s track. */
+export const clipPercent = (s: number) => `${(s / FULL_CLIP_SECONDS) * 100}%`;
+
 export type Mode = "daily" | "unlimited";
 export type Status = "playing" | "won" | "lost";
 
