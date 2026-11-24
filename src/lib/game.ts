@@ -9,7 +9,7 @@ export const GUESS_TIMES = [1, 3, 5, 10, 20, 30] as const;
 export const MAX_GUESSES = GUESS_TIMES.length;
 export const FULL_CLIP_SECONDS = 30;
 
-export type Mode = "daily" | "practice";
+export type Mode = "daily" | "unlimited";
 export type Status = "playing" | "won" | "lost";
 
 /** Public game state. The answer is only present once the game is over. */

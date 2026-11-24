@@ -5,7 +5,7 @@ Browser game inspired by Wordle, built around identifying Kanye West tracks from
 ## How it works
 
 - **Daily:** one song a day, the same for everyone. A new one starts at your local midnight.
-- **Practice:** unlimited random songs. They don't count toward your stats.
+- **Unlimited:** random songs, as many as you want. They don't count toward your stats.
 - You get 6 guesses. Each miss or skip unlocks more of the clip: 1, 3, 5, 10, 20, then 30 seconds.
 - Stats, streaks and a share button (`Ye Guesser #327 🟥⬛🟩⬜⬜⬜ 🔥12`). Guests keep stats in the browser.
 - Optional login with Google or Discord saves stats to your account, with an optional username.

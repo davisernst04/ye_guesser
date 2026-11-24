@@ -116,9 +116,9 @@ export function startDaily(puzzle: number): GameResponse {
   return respond({ mode: "daily", puzzle, songId: dailySongId(puzzle), guesses: [] });
 }
 
-export function startPractice(): GameResponse {
+export function startUnlimited(): GameResponse {
   const song = SONGS[randomInt(SONGS.length)]!;
-  return respond({ mode: "practice", puzzle: null, songId: song.id, guesses: [] });
+  return respond({ mode: "unlimited", puzzle: null, songId: song.id, guesses: [] });
 }
 
 export type GuessResult = GameResponse | { error: string };
