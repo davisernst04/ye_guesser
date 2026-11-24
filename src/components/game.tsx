@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import AudioPlayer, { glyphButton } from "@/components/audio-player";
 import { SongPicker } from "@/components/guess";
 import { StatsDialog } from "@/components/stats-dialog";
-import { FanNote } from "@/components/fan-note";
 import { ModeSwitch } from "@/components/mode-switch";
 import { AccountDialog, Avatar } from "@/components/account-dialog";
 import { Ambient, Stage } from "@/components/now-playing";
@@ -308,8 +307,6 @@ export default function Game({ mode }: { mode: Mode }) {
             </button>
           </nav>
         </main>
-
-        <FanNote className="text-label-3" />
       </div>
 
       <StatsDialog
