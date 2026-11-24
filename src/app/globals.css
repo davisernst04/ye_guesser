@@ -136,6 +136,23 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Tailwind v4 dropped the pointer cursor on buttons. Bring it back for
+     everything clickable, so desktop users can see what they can press. */
+  :where(
+      button,
+      select,
+      summary,
+      [role="button"],
+      [role="switch"],
+      [role="option"],
+      [role="menuitem"],
+      [role="menuitemradio"],
+      [role="menuitemcheckbox"],
+      [role="slider"],
+      [data-slot="slider"]
+    ):not(:disabled, [aria-disabled="true"], [data-disabled=""], [data-disabled="true"]) {
+    cursor: pointer;
+  }
 }
 
 /* Home page background (components/ui/3d-marquee.tsx). Scrolls a column by
