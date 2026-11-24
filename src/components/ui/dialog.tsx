@@ -47,9 +47,9 @@ function DialogOverlay({
 }
 
 /**
- * Lets the bottom sheet be dragged down to close on touch screens, like a native sheet.
- * A drag starts only on a downward swipe while nothing under the finger is
- * scrolled, so lists inside the sheet still scroll normally.
+ * Lets the bottom sheet be dragged down to close, like a native sheet.
+ * Touch and mouse both work. A drag starts only on a downward swipe while
+ * nothing under the pointer is scrolled, so lists inside the sheet still scroll.
  */
 function useSwipeToClose(
   sheet: HTMLDivElement | null,
@@ -67,64 +67,108 @@ function useSwipeToClose(
     let dragging = false
     let offset = 0
 
-    const onStart = (event: TouchEvent) => {
+    const start = (x: number, y: number, time: number, target: EventTarget | null) => {
       decided = dragging = false
       offset = 0
-      canDrag = event.touches.length === 1
-      for (let el = event.target as HTMLElement | null; canDrag && el && el !== sheet.parentElement; el = el.parentElement) {
+      canDrag = true
+      for (let el = target as HTMLElement | null; canDrag && el && el !== sheet.parentElement; el = el.parentElement) {
         if (el.scrollTop > 0) canDrag = false
       }
-      const touch = event.touches[0]!
-      startX = touch.clientX
-      startY = touch.clientY
-      lastTime = event.timeStamp
+      startX = x
+      startY = y
+      lastTime = time
       velocity = 0
     }
 
-    const onMove = (event: TouchEvent) => {
-      if (!canDrag) return
-      const touch = event.touches[0]!
-      const dx = touch.clientX - startX
-      const dy = touch.clientY - startY
+    /** Returns true while the sheet follows the pointer. */
+    const move = (x: number, y: number, time: number) => {
+      if (!canDrag) return false
+      const dx = x - startX
+      const dy = y - startY
       if (!decided) {
-        if (Math.hypot(dx, dy) < 6) return
+        if (Math.hypot(dx, dy) < 6) return false
         decided = true
         dragging = dy > 0 && dy > Math.abs(dx)
-        if (dragging) sheet.style.transition = "none"
+        if (dragging) {
+          sheet.style.transition = "none"
+          sheet.style.userSelect = "none"
+          window.getSelection()?.removeAllRanges()
+        }
       }
-      if (!dragging) return
-      event.preventDefault()
+      if (!dragging) return false
       const next = Math.max(0, dy)
-      velocity = (next - offset) / Math.max(1, event.timeStamp - lastTime)
-      lastTime = event.timeStamp
+      velocity = (next - offset) / Math.max(1, time - lastTime)
+      lastTime = time
       offset = next
       sheet.style.transform = `translateY(${offset}px)`
+      return true
     }
 
-    const onEnd = (event: TouchEvent) => {
-      if (!dragging) return
+    /** Returns true if a drag just ended. */
+    const end = (time: number) => {
+      canDrag = false
+      if (!dragging) return false
       dragging = false
+      sheet.style.userSelect = ""
       // A downward flick closes the sheet even after a short drag,
-      // unless the finger stopped before it let go.
-      const flick = velocity > 0.4 && event.timeStamp - lastTime < 100
+      // unless the pointer stopped before it let go.
+      const flick = velocity > 0.4 && time - lastTime < 100
       if (offset > sheet.offsetHeight / 4 || (offset > 40 && flick)) {
-        // The exit animation starts from where the finger left the sheet.
+        // The exit animation starts from where the pointer left the sheet.
         closeRef.current?.click()
-        return
+      } else {
+        sheet.style.transition = "transform 300ms cubic-bezier(0.32, 0.72, 0, 1)"
+        sheet.style.transform = ""
       }
-      sheet.style.transition = "transform 300ms cubic-bezier(0.32, 0.72, 0, 1)"
-      sheet.style.transform = ""
+      return true
     }
 
-    sheet.addEventListener("touchstart", onStart, { passive: true })
-    sheet.addEventListener("touchmove", onMove, { passive: false })
-    sheet.addEventListener("touchend", onEnd)
-    sheet.addEventListener("touchcancel", onEnd)
+    const onTouchStart = (event: TouchEvent) => {
+      const touch = event.touches[0]!
+      start(touch.clientX, touch.clientY, event.timeStamp, event.target)
+      if (event.touches.length !== 1) canDrag = false
+    }
+    const onTouchMove = (event: TouchEvent) => {
+      const touch = event.touches[0]!
+      if (move(touch.clientX, touch.clientY, event.timeStamp)) event.preventDefault()
+    }
+    const onTouchEnd = (event: TouchEvent) => end(event.timeStamp)
+
+    // Touch uses the touch events above, because only they can stop the page from scrolling.
+    const onMouseMove = (event: PointerEvent) => move(event.clientX, event.clientY, event.timeStamp)
+    // A drag that starts and ends on a button must not also press it.
+    const swallowClick = (event: MouseEvent) => event.stopPropagation()
+    const onMouseUp = (event: PointerEvent) => {
+      window.removeEventListener("pointermove", onMouseMove)
+      window.removeEventListener("pointerup", onMouseUp)
+      window.removeEventListener("pointercancel", onMouseUp)
+      if (end(event.timeStamp)) {
+        window.addEventListener("click", swallowClick, { capture: true, once: true })
+        setTimeout(() => window.removeEventListener("click", swallowClick, { capture: true }))
+      }
+    }
+    const onMouseDown = (event: PointerEvent) => {
+      if (event.pointerType !== "mouse" || event.button !== 0) return
+      start(event.clientX, event.clientY, event.timeStamp, event.target)
+      window.addEventListener("pointermove", onMouseMove)
+      window.addEventListener("pointerup", onMouseUp)
+      window.addEventListener("pointercancel", onMouseUp)
+    }
+
+    sheet.addEventListener("touchstart", onTouchStart, { passive: true })
+    sheet.addEventListener("touchmove", onTouchMove, { passive: false })
+    sheet.addEventListener("touchend", onTouchEnd)
+    sheet.addEventListener("touchcancel", onTouchEnd)
+    sheet.addEventListener("pointerdown", onMouseDown)
     return () => {
-      sheet.removeEventListener("touchstart", onStart)
-      sheet.removeEventListener("touchmove", onMove)
-      sheet.removeEventListener("touchend", onEnd)
-      sheet.removeEventListener("touchcancel", onEnd)
+      sheet.removeEventListener("touchstart", onTouchStart)
+      sheet.removeEventListener("touchmove", onTouchMove)
+      sheet.removeEventListener("touchend", onTouchEnd)
+      sheet.removeEventListener("touchcancel", onTouchEnd)
+      sheet.removeEventListener("pointerdown", onMouseDown)
+      window.removeEventListener("pointermove", onMouseMove)
+      window.removeEventListener("pointerup", onMouseUp)
+      window.removeEventListener("pointercancel", onMouseUp)
     }
   }, [sheet, closeRef])
 }
@@ -163,9 +207,8 @@ function DialogContent({
         )}
         {...props}
       >
-        {/* Floats, so content such as artwork can run to the top edge under it.
-            Mouse users get no handle, since only touch can drag the sheet. */}
-        <div aria-hidden className="absolute top-2 left-1/2 z-10 h-1.5 w-10 -translate-x-1/2 rounded-full bg-white/35 pointer-fine:hidden" />
+        {/* Floats, so content such as artwork can run to the top edge under it. */}
+        <div aria-hidden className="absolute top-2 left-1/2 z-10 h-1.5 w-10 -translate-x-1/2 rounded-full bg-white/35" />
         {children}
         <DialogPrimitive.Close ref={closeRef} className="absolute top-4 right-4 z-10 grid size-8 place-items-center rounded-full bg-black/35 text-label-2 backdrop-blur-md transition-[transform,background-color] duration-200 ease-spring hover:bg-white/20 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ye/60 focus-visible:outline-none active:scale-90 [&_svg]:size-4">
           <XIcon />
