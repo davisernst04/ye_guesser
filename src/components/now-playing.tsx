@@ -1,6 +1,7 @@
 "use client";
 
 // The pieces of the player screen that only draw things: background, artwork and guess list.
+import { ViewTransition } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, SkipForward, X } from "lucide-react";
@@ -12,6 +13,8 @@ const HIDDEN_COVER = "/ye_stare.jpg";
 export function Ambient({ cover }: { cover: string | null }) {
   const src = cover ? coverUrl(cover, 120) : HIDDEN_COVER;
   return (
+    // Named, so it crossfades in place when the mode changes instead of sliding.
+    <ViewTransition name="ambient">
     <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden bg-black">
       <AnimatePresence initial={false}>
         <motion.div
@@ -34,6 +37,7 @@ export function Ambient({ cover }: { cover: string | null }) {
       </AnimatePresence>
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/30 to-black/60" />
     </div>
+    </ViewTransition>
   );
 }
 

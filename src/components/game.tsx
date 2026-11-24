@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { ViewTransition, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { BarChart3, Check, FastForward, Flag, ListMusic, Share2 } from "lucide-react";
@@ -25,6 +25,9 @@ import {
 import { computeStats, loadJson, loadResults, recordResult, saveJson, shareText } from "@/lib/stats";
 
 type Saved = GameResponse;
+
+// Daily sits left of Unlimited in the toggle, so the screen slides that way (see game-loader.tsx).
+const slideTo = (mode: Mode) => [mode === "unlimited" ? "mode-left" : "mode-right"];
 
 async function post(path: string, body: unknown): Promise<GameResponse> {
   const res = await fetch(path, {
@@ -195,25 +198,36 @@ export default function Game({ mode }: { mode: Mode }) {
     <MotionConfig reducedMotion="user">
       <Ambient cover={view?.answer?.cover ?? null} />
       <div className="relative mx-auto flex min-h-dvh max-w-md flex-col px-6">
+        {/* The header stays put while the game slides under it. */}
+        <ViewTransition name="game-header">
         <header className="flex items-center justify-between gap-2 py-4">
           <Link href="/" className="font-custom text-xl text-ye transition-opacity hover:opacity-80">
             Ye Guesser
           </Link>
           <nav className="flex rounded-full bg-white/10 p-0.5 text-xs backdrop-blur-xl">
-            {(["daily", "unlimited"] as const).map((m) => (
-              <Link
-                key={m}
-                href={m === "daily" ? "/play" : "/unlimited"}
-                aria-current={mode === m ? "page" : undefined}
-                className={`rounded-full px-3 py-1.5 transition-[background-color,color,transform] duration-200 ease-spring active:scale-95 ${
-                  mode === m ? "bg-white/90 text-black" : "text-white/60 hover:text-white"
-                }`}
-              >
-                {m === "daily" ? "DAILY" : "UNLIMITED"}
-              </Link>
-            ))}
+            {(["daily", "unlimited"] as const).map((m) => {
+              const label = m === "daily" ? "DAILY" : "UNLIMITED";
+              return mode === m ? (
+                // The pill glides to the other tab when the mode changes.
+                <ViewTransition key={m} name="mode-pill">
+                  <span aria-current="page" className="rounded-full bg-white/90 px-3 py-1.5 text-black">
+                    {label}
+                  </span>
+                </ViewTransition>
+              ) : (
+                <Link
+                  key={m}
+                  href={m === "daily" ? "/play" : "/unlimited"}
+                  transitionTypes={slideTo(m)}
+                  className="rounded-full px-3 py-1.5 text-white/60 transition-[color,transform] duration-200 ease-spring hover:text-white active:scale-95"
+                >
+                  {label}
+                </Link>
+              );
+            })}
           </nav>
         </header>
+        </ViewTransition>
 
         <main className="flex-1 pb-4">
           {error && (
@@ -282,7 +296,7 @@ export default function Game({ mode }: { mode: Mode }) {
                   <div className="space-y-2 text-center">
                     {shareButton}
                     <p className="text-xs">
-                      <Link href="/unlimited" className="text-ye underline-offset-4 hover:underline">
+                      <Link href="/unlimited" transitionTypes={slideTo("unlimited")} className="text-ye underline-offset-4 hover:underline">
                         Play unlimited
                       </Link>
                     </p>
