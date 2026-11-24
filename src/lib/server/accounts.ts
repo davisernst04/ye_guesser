@@ -1,9 +1,9 @@
 // Account data. Only the server writes it; see supabase/migrations.
 import "server-only";
 import { GAME_ALBUMS, MAX_FAVORITES } from "@/lib/covers";
-import { resultOf } from "@/lib/game";
+import { resultOf, type GameResponse, type GameView } from "@/lib/game";
 import type { Results } from "@/lib/stats";
-import { finishedDaily } from "@/lib/server/session";
+import { finishedDaily, restoreDaily } from "@/lib/server/session";
 import { admin } from "@/lib/server/supabase";
 
 export async function loadResults(userId: string): Promise<Results> {
@@ -33,9 +33,26 @@ export async function saveFavorites(userId: string, albums: unknown): Promise<bo
   return true;
 }
 
-/** Saves results. A puzzle that already has a result keeps it. */
-async function saveResults(userId: string, results: Results): Promise<void> {
-  const rows = Object.entries(results).map(([puzzle, guesses]) => ({ user_id: userId, puzzle: Number(puzzle), guesses }));
+/** Today's daily game as this account finished it, or null if it has not. */
+export async function savedDaily(userId: string, puzzle: number): Promise<GameResponse | null> {
+  const { data, error } = await admin()
+    .from("results")
+    .select("guesses, picks")
+    .eq("user_id", userId)
+    .eq("puzzle", puzzle)
+    .maybeSingle();
+  if (error) throw error;
+  return data && restoreDaily(puzzle, data.guesses, data.picks);
+}
+
+/** Saves finished daily games. A puzzle that already has a result keeps it. */
+async function saveResults(userId: string, views: GameView[]): Promise<void> {
+  const rows = views.map((view) => ({
+    user_id: userId,
+    puzzle: view.puzzle!,
+    guesses: resultOf(view),
+    picks: view.guesses.map((g) => g.songId),
+  }));
   if (!rows.length) return;
   const { error } = await admin()
     .from("results")
@@ -46,7 +63,7 @@ async function saveResults(userId: string, results: Results): Promise<void> {
 /** Records a finished daily game, given its sealed game token. */
 export async function recordGame(userId: string, token: string): Promise<void> {
   const view = finishedDaily(token);
-  if (view) await saveResults(userId, { [view.puzzle!]: resultOf(view) });
+  if (view) await saveResults(userId, [view]);
 }
 
 /**
@@ -63,12 +80,12 @@ export async function importGuest(userId: string, tokens: unknown): Promise<void
   if (error) throw error;
   if (count) return;
 
-  const results: Results = {};
+  const views = new Map<number, GameView>();
   for (const token of tokens.slice(0, 2000)) {
     const view = finishedDaily(token);
-    if (view && !(view.puzzle! in results)) results[view.puzzle!] = resultOf(view);
+    if (view && !views.has(view.puzzle!)) views.set(view.puzzle!, view);
   }
-  await saveResults(userId, results);
+  await saveResults(userId, [...views.values()]);
 }
 
 /** Deletes the auth user. The database deletes their results and favourites with it. */

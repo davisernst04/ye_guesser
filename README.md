@@ -1,14 +1,14 @@
 # Ye Guesser
 
-Browser game inspired by Wordle, built around identifying Kanye West tracks from short audio clips. Each incorrect guess reveals a longer portion of the snippet until the player either identifies the song or runs out of attempts.
+A Wordle-style browser game where you name Kanye West songs from short audio clips. Each wrong guess plays a longer part of the clip, until you get the song or run out of guesses.
 
 ## How it works
 
-- **Daily:** one song a day, the same for everyone. A new one starts at your local midnight.
-- **Unlimited:** random songs, as many as you want. They don't count toward your stats.
+- Daily mode has one song a day, the same for everyone. A new one starts at your local midnight.
+- Unlimited mode plays random songs, as many as you want. They don't count toward your stats.
 - You get 6 guesses. Each miss or skip unlocks more of the clip: 1, 3, 5, 10, 20, then 30 seconds.
-- Stats, streaks and a share button (`Ye Guesser #327 🟥⬛🟩⬜⬜⬜ 🔥12`). Guests keep stats in the browser.
-- Optional login with Google or Discord saves stats to your account and shows your Google or Discord name and picture.
+- The game tracks stats and streaks and has a share button (`Ye Guesser #327 🟥⬛🟩⬜⬜⬜ 🔥12`). Guests keep stats in the browser.
+- You can log in with Google or Discord to save stats to an account. The game then shows your Google or Discord name and picture.
   On your first login, your guest stats move into the new account. An account that already has
   stats keeps its own. "Delete account" removes everything.
 
@@ -67,12 +67,21 @@ npm run build
 npm start
 ```
 
+## Vercel deployment
+
+Deploy the repository root with the Next.js preset. Install with `npm ci` and build with
+`npm run build`. The project uses npm, and `package-lock.json` is the lockfile to trust.
+Set `GAME_SECRET` and the three `SUPABASE_*` variables in the project's environment variables.
+
+Song metadata, cover art, and audio previews come from outside providers. A deploy can
+succeed while one of them is down.
+
 ## Scripts
 
-- `npm run dev` - start the development server
-- `npm run build` - build for production
-- `npm run start` - run the production build
-- `npm run lint` - run linting
+- `npm run dev`: start the development server
+- `npm run build`: build for production
+- `npm run start`: run the production build
+- `npm run lint`: run linting
 
 ## Song list
 
@@ -89,12 +98,3 @@ allow playback of it.
 ## License
 
 MIT
-
-## Vercel deployment
-
-Deploy the repository root using the Next.js preset. Install with `npm ci` and
-build with `npm run build`. Set `GAME_SECRET` and the three `SUPABASE_*` variables in
-the project's environment variables.
-npm is the deployment package manager;
-`package-lock.json` is the authoritative lockfile. Music metadata, cover art, and audio previews rely on external
-providers; their availability is separate from deployment success.
