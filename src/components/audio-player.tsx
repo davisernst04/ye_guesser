@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Loader2, Pause, Play, Rewind } from "lucide-react";
-import { FULL_CLIP_SECONDS, GUESS_TIMES } from "@/lib/game";
+import { FULL_CLIP_SECONDS, GUESS_TIMES, clipPercent } from "@/lib/game";
 
 type Props = {
   /** Game token. The server decides how much audio it unlocks. */
@@ -18,7 +18,6 @@ type Props = {
 };
 
 const time = (s: number) => `0:${String(Math.floor(s)).padStart(2, "0")}`;
-const percent = (s: number) => `${(s / FULL_CLIP_SECONDS) * 100}%`;
 
 /** A plain white glyph button, like the transport controls in Apple Music. */
 export const glyphButton =
@@ -170,11 +169,11 @@ export default function AudioPlayer({ token, seconds, autoPlay = false, onPlayin
         >
           <div
             className="absolute inset-y-0 left-0 rounded-full bg-white/35 transition-[width] duration-700 ease-spring"
-            style={{ width: percent(seconds) }}
+            style={{ width: clipPercent(seconds) }}
           />
-          <div className="absolute inset-y-0 left-0 rounded-full bg-white/90" style={{ width: percent(shown) }} />
+          <div className="absolute inset-y-0 left-0 rounded-full bg-white/90" style={{ width: clipPercent(shown) }} />
           {GUESS_TIMES.slice(0, -1).map((t) => (
-            <div key={t} className="absolute inset-y-0 w-0.5 bg-black/40" style={{ left: percent(t) }} />
+            <div key={t} className="absolute inset-y-0 w-0.5 bg-black/40" style={{ left: clipPercent(t) }} />
           ))}
         </div>
       </div>

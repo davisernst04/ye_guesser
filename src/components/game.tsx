@@ -289,8 +289,8 @@ export default function Game({ mode }: { mode: Mode }) {
           <nav className="mt-6 grid grid-cols-3 justify-items-center" aria-label="Player">
             <button
               type="button"
-              // A guest still sees today's recap and share button, with their stats blurred behind a login prompt.
-              onClick={() => (guest && !recap ? openLogin() : setStatsOpen(true))}
+              // Guests have no stats to show yet, so the button opens the login sheet.
+              onClick={() => (guest ? openLogin() : setStatsOpen(true))}
               aria-label="Stats" className={`${glyphButton} size-11 text-white/80`}>
               <BarChart3 className="size-[22px]" />
             </button>
