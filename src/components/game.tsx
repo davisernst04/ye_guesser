@@ -122,8 +122,13 @@ export default function Game({ mode }: { mode: Mode }) {
   const view = game?.view;
   // Page to come back to after login.
   const returnPath = mode === "daily" ? "/play" : "/unlimited";
-  // This account finished today's puzzle on another device, so this game wouldn't count.
+  // This account finished today's puzzle on another device. Fetch that game in place of this one.
   const playedElsewhere = mode === "daily" && view?.status === "playing" && user?.results[today] !== undefined;
+  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  useEffect(() => {
+    if (playedElsewhere) void start();
+  }, [playedElsewhere]);
+  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   // Today's finished daily game, which the stats dialog leads with.
   const recap = view?.mode === "daily" && view.status !== "playing" ? view : undefined;
   // Guests keep stats only in this browser, so they see the login sheet in their place.
@@ -221,15 +226,7 @@ export default function Game({ mode }: { mode: Mode }) {
             </div>
           )}
 
-          {playedElsewhere ? (
-            <div className="mt-24 space-y-4 text-center">
-              <h1 className="text-2xl font-bold">DAILY #{today}</h1>
-              <p className="text-sm text-label-2">
-                You already played today&apos;s song on another device.
-              </p>
-              <Button onClick={() => setStatsOpen(true)}>See stats</Button>
-            </div>
-          ) : !view ? (
+          {!view || playedElsewhere ? (
             !error && (
               <div className="mt-2 aspect-square w-full animate-pulse rounded-xl bg-white/10" />
             )
