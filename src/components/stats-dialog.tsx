@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronRight, Flame } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GUESS_TIMES, MAX_GUESSES, coverUrl, type GameView } from "@/lib/game";
 import { RECENT_DAYS, type Stats } from "@/lib/stats";
@@ -12,7 +11,7 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   /** Guesses used in today's win, to highlight its track. */
   highlight?: number;
-  /** Set for guests: opens the login sheet. A login row takes the place of the stats. */
+  /** Set for guests: opens the login sheet. The stats show blurred behind a login prompt. */
   onLogin?: () => void;
   /** Today's finished daily game. When set, the dialog leads with its song. */
   view?: GameView;
@@ -94,6 +93,70 @@ function Credits({ stats, view }: { stats: Stats; view?: GameView }) {
 
 export function StatsDialog({ stats, open, onOpenChange, highlight, onLogin, view, children }: Props) {
   const answer = view?.answer;
+  const details = (
+    <>
+      <Credits stats={stats} view={view} />
+
+      {/* Wins by clip length, laid out like the tracklist on an album's back cover. */}
+      <section aria-label="Solved at">
+        <ol className="border-t border-glass-strong">
+          {stats.distribution.map((count, i) => {
+            const today = highlight === i + 1;
+            const wins = `${count} ${count === 1 ? "win" : "wins"}`;
+            return (
+              <li
+                key={i}
+                aria-label={`${wins} at ${GUESS_TIMES[i]} seconds`}
+                className={`flex items-baseline gap-2.5 border-b border-glass py-2 text-sm tabular-nums ${
+                  today ? "text-ye" : count ? "" : "text-label-3"
+                }`}
+              >
+                <span aria-hidden className={`w-4 ${today ? "" : "text-label-3"}`}>
+                  {i + 1}
+                </span>
+                <span aria-hidden className="w-9">
+                  0:{String(GUESS_TIMES[i]).padStart(2, "0")}
+                </span>
+                <span aria-hidden className="flex-1 -translate-y-1 border-b-2 border-dotted border-glass-strong" />
+                <span aria-hidden>{wins}</span>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
+
+      {/* The last few weeks as a barcode, oldest on the left. */}
+      <section aria-label={`Last ${RECENT_DAYS} days`}>
+        <ol className="flex h-8 gap-0.5">
+          {stats.recent.map((result, i) => {
+            const daysAgo = RECENT_DAYS - 1 - i;
+            const color =
+              daysAgo === 0 && result !== null
+                ? result > 0
+                  ? "bg-ye"
+                  : "bg-miss"
+                : result === null
+                  ? "bg-glass-strong"
+                  : result > 0
+                    ? "bg-white"
+                    : "bg-miss";
+            return (
+              <li
+                key={i}
+                title={dayLabel(result, daysAgo)}
+                aria-label={dayLabel(result, daysAgo)}
+                className={`flex-1 ${color}`}
+              />
+            );
+          })}
+        </ol>
+        <p aria-hidden className="mt-1.5 flex justify-between text-[11px] font-normal text-label-3">
+          <span>{RECENT_DAYS} days ago</span>
+          <span>Today</span>
+        </p>
+      </section>
+    </>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -106,80 +169,27 @@ export function StatsDialog({ stats, open, onOpenChange, highlight, onLogin, vie
 
         {view && answer && <Recap view={{ ...view, answer }} />}
 
-        {/* Guests keep stats only in this browser, so they get a way to log in instead. */}
+        {/* Guests see their stats blurred behind a login prompt. */}
         {onLogin ? (
-          <button
-            type="button"
-            onClick={onLogin}
-            className="flex w-full items-center gap-3 rounded-2xl bg-white/[0.06] p-4 text-left transition-colors hover:bg-glass-strong"
-          >
-            <Flame className="size-6 text-label-3" />
-            <span className="flex-1 font-bold">Log in to keep your streak</span>
-            <ChevronRight className="size-5 text-label-3" />
-          </button>
-        ) : (
-          <>
-            <Credits stats={stats} view={view} />
-
-            {/* Wins by clip length, laid out like the tracklist on an album's back cover. */}
-            <section aria-label="Solved at">
-              <ol className="border-t border-glass-strong">
-                {stats.distribution.map((count, i) => {
-                  const today = highlight === i + 1;
-                  const wins = `${count} ${count === 1 ? "win" : "wins"}`;
-                  return (
-                    <li
-                      key={i}
-                      aria-label={`${wins} at ${GUESS_TIMES[i]} seconds`}
-                      className={`flex items-baseline gap-2.5 border-b border-glass py-2 text-sm tabular-nums ${
-                        today ? "text-ye" : count ? "" : "text-label-3"
-                      }`}
-                    >
-                      <span aria-hidden className={`w-4 ${today ? "" : "text-label-3"}`}>
-                        {i + 1}
-                      </span>
-                      <span aria-hidden className="w-9">
-                        0:{String(GUESS_TIMES[i]).padStart(2, "0")}
-                      </span>
-                      <span aria-hidden className="flex-1 -translate-y-1 border-b-2 border-dotted border-glass-strong" />
-                      <span aria-hidden>{wins}</span>
-                    </li>
-                  );
-                })}
-              </ol>
-            </section>
-
-            {/* The last few weeks as a barcode, oldest on the left. */}
-            <section aria-label={`Last ${RECENT_DAYS} days`}>
-              <ol className="flex h-8 gap-0.5">
-                {stats.recent.map((result, i) => {
-                  const daysAgo = RECENT_DAYS - 1 - i;
-                  const color =
-                    daysAgo === 0 && result !== null
-                      ? result > 0
-                        ? "bg-ye"
-                        : "bg-miss"
-                      : result === null
-                        ? "bg-glass-strong"
-                        : result > 0
-                          ? "bg-white"
-                          : "bg-miss";
-                  return (
-                    <li
-                      key={i}
-                      title={dayLabel(result, daysAgo)}
-                      aria-label={dayLabel(result, daysAgo)}
-                      className={`flex-1 ${color}`}
-                    />
-                  );
-                })}
-              </ol>
-              <p aria-hidden className="mt-1.5 flex justify-between text-[11px] font-normal text-label-3">
-                <span>{RECENT_DAYS} days ago</span>
-                <span>Today</span>
+          <div className="relative">
+            <div aria-hidden inert className="grid gap-5 opacity-55 blur-[7px] select-none">
+              {details}
+            </div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-4 text-center">
+              <p className="text-[22px] leading-tight tracking-tight">
+                {view?.status === "won" ? "Log in to keep your streak alive" : "Log in to save every result"}
               </p>
-            </section>
-          </>
+              <button
+                type="button"
+                onClick={onLogin}
+                className="h-11 rounded-full bg-white px-6 text-[15px] text-black transition-colors outline-none hover:bg-white/85 focus-visible:ring-[3px] focus-visible:ring-ye/60"
+              >
+                Log in
+              </button>
+            </div>
+          </div>
+        ) : (
+          details
         )}
 
         {children}
