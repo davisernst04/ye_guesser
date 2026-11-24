@@ -46,16 +46,115 @@ function DialogOverlay({
   )
 }
 
+/**
+ * Lets the phone bottom sheet be dragged down to close, like a native sheet.
+ * A drag starts only on a downward swipe while nothing under the finger is
+ * scrolled, so lists inside the sheet still scroll normally.
+ */
+function useSwipeToClose(
+  sheet: HTMLDivElement | null,
+  closeRef: React.RefObject<HTMLButtonElement | null>
+) {
+  React.useEffect(() => {
+    if (!sheet) return
+
+    let startX = 0
+    let startY = 0
+    let lastTime = 0
+    let velocity = 0
+    let canDrag = false
+    let decided = false
+    let dragging = false
+    let offset = 0
+
+    const onStart = (event: TouchEvent) => {
+      decided = dragging = false
+      offset = 0
+      // Wider screens show a centered card, not a sheet.
+      canDrag = event.touches.length === 1 && !window.matchMedia("(min-width: 40rem)").matches
+      for (let el = event.target as HTMLElement | null; canDrag && el && el !== sheet.parentElement; el = el.parentElement) {
+        if (el.scrollTop > 0) canDrag = false
+      }
+      const touch = event.touches[0]!
+      startX = touch.clientX
+      startY = touch.clientY
+      lastTime = event.timeStamp
+      velocity = 0
+    }
+
+    const onMove = (event: TouchEvent) => {
+      if (!canDrag) return
+      const touch = event.touches[0]!
+      const dx = touch.clientX - startX
+      const dy = touch.clientY - startY
+      if (!decided) {
+        if (Math.hypot(dx, dy) < 6) return
+        decided = true
+        dragging = dy > 0 && dy > Math.abs(dx)
+        if (dragging) sheet.style.transition = "none"
+      }
+      if (!dragging) return
+      event.preventDefault()
+      const next = Math.max(0, dy)
+      velocity = (next - offset) / Math.max(1, event.timeStamp - lastTime)
+      lastTime = event.timeStamp
+      offset = next
+      sheet.style.transform = `translateY(${offset}px)`
+    }
+
+    const onEnd = (event: TouchEvent) => {
+      if (!dragging) return
+      dragging = false
+      // A downward flick closes the sheet even after a short drag,
+      // unless the finger stopped before it let go.
+      const flick = velocity > 0.4 && event.timeStamp - lastTime < 100
+      if (offset > sheet.offsetHeight / 4 || (offset > 40 && flick)) {
+        // The exit animation starts from where the finger left the sheet.
+        closeRef.current?.click()
+        return
+      }
+      sheet.style.transition = "transform 300ms cubic-bezier(0.32, 0.72, 0, 1)"
+      sheet.style.transform = ""
+    }
+
+    sheet.addEventListener("touchstart", onStart, { passive: true })
+    sheet.addEventListener("touchmove", onMove, { passive: false })
+    sheet.addEventListener("touchend", onEnd)
+    sheet.addEventListener("touchcancel", onEnd)
+    return () => {
+      sheet.removeEventListener("touchstart", onStart)
+      sheet.removeEventListener("touchmove", onMove)
+      sheet.removeEventListener("touchend", onEnd)
+      sheet.removeEventListener("touchcancel", onEnd)
+    }
+  }, [sheet, closeRef])
+}
+
 function DialogContent({
   className,
   children,
+  ref,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content>) {
+  // State, not a ref: the sheet mounts only when the dialog opens.
+  const [sheet, setSheet] = React.useState<HTMLDivElement | null>(null)
+  const closeRef = React.useRef<HTMLButtonElement>(null)
+  useSwipeToClose(sheet, closeRef)
+  const setRefs = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      setSheet(node)
+      if (typeof ref === "function") ref(node)
+      else if (ref) ref.current = node
+    },
+    [ref]
+  )
+
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"
+        ref={setRefs}
         className={cn(
           // A bottom sheet on phones, a centered card on wider screens.
           "fixed inset-x-0 bottom-0 z-50 grid max-h-[92dvh] w-full gap-5 overflow-y-auto rounded-t-[28px] border-t border-glass-edge bg-neutral-900/85 px-5 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-2xl ease-spring outline-none",
@@ -68,7 +167,7 @@ function DialogContent({
       >
         <div aria-hidden className="mx-auto h-1.5 w-10 rounded-full bg-white/25 sm:hidden" />
         {children}
-        <DialogPrimitive.Close className="absolute top-4 right-4 grid size-8 place-items-center rounded-full bg-glass-strong text-label-2 transition-[transform,background-color] duration-200 ease-spring hover:bg-white/20 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ye/60 focus-visible:outline-none active:scale-90 [&_svg]:size-4">
+        <DialogPrimitive.Close ref={closeRef} className="absolute top-4 right-4 grid size-8 place-items-center rounded-full bg-glass-strong text-label-2 transition-[transform,background-color] duration-200 ease-spring hover:bg-white/20 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ye/60 focus-visible:outline-none active:scale-90 [&_svg]:size-4">
           <XIcon />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
