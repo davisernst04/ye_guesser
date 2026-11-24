@@ -116,6 +116,16 @@ export function startDaily(puzzle: number): GameResponse {
   return respond({ mode: "daily", puzzle, songId: dailySongId(puzzle), guesses: [] });
 }
 
+/**
+ * A daily game as it ended on another device. Without its picks (older results),
+ * it is rebuilt from the result alone: skips, then the answer for a win.
+ */
+export function restoreDaily(puzzle: number, result: number, picks: (number | null)[] | null): GameResponse {
+  const songId = dailySongId(puzzle);
+  const guesses = picks ?? (result ? [...Array<null>(result - 1).fill(null), songId] : Array<null>(MAX_GUESSES).fill(null));
+  return respond({ mode: "daily", puzzle, songId, guesses });
+}
+
 export function startUnlimited(): GameResponse {
   const song = SONGS[randomInt(SONGS.length)]!;
   return respond({ mode: "unlimited", puzzle: null, songId: song.id, guesses: [] });
