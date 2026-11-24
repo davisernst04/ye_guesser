@@ -96,7 +96,9 @@
   --glass-edge: rgb(255 255 255 / 0.1);
   --label-2: rgb(235 235 245 / 0.62);
   --label-3: rgb(235 235 245 / 0.32);
-  --background: oklch(0.145 0 0);
+  /* Pure black, to match theme-color and the home page behind its dim
+     layer. iOS Safari tints its top and bottom bars with this colour. */
+  --background: #000;
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
@@ -174,62 +176,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; }
-}
-
-/* Switching between Daily and Unlimited (components/game-loader.tsx). The game
-   slides toward the tab you picked, the header (with its toggle, see
-   components/mode-switch.tsx) stays put and the background crossfades. */
-::view-transition {
-  pointer-events: none;
-}
-::view-transition-group(game-header) {
-  animation: none;
-  z-index: 100;
-}
-::view-transition-old(game-header) {
-  display: none;
-}
-::view-transition-new(game-header) {
-  animation: none;
-}
-::view-transition-old(.mode-left),
-::view-transition-old(.mode-right) {
-  animation:
-    150ms ease-in both mode-fade reverse,
-    400ms var(--ease-spring) both mode-slide reverse;
-}
-::view-transition-new(.mode-left),
-::view-transition-new(.mode-right) {
-  animation:
-    250ms ease-out 100ms both mode-fade,
-    400ms var(--ease-spring) both mode-slide;
-}
-::view-transition-old(.mode-left),
-::view-transition-new(.mode-right) {
-  --mode-offset: -48px;
-}
-::view-transition-new(.mode-left),
-::view-transition-old(.mode-right) {
-  --mode-offset: 48px;
-}
-@keyframes mode-fade {
-  from {
-    opacity: 0;
-    filter: blur(4px);
-  }
-}
-@keyframes mode-slide {
-  from {
-    translate: var(--mode-offset);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
-    animation-duration: 0s !important;
-    animation-delay: 0s !important;
-  }
 }
 
 /* Hover label for icon buttons (glyphButton in components/audio-player.tsx).

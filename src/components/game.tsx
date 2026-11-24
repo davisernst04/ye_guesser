@@ -1,6 +1,6 @@
 "use client";
 
-import { ViewTransition, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { BarChart3, Check, FastForward, Flag, ListMusic, Share2, UserRound } from "lucide-react";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import AudioPlayer, { glyphButton } from "@/components/audio-player";
 import { SongPicker } from "@/components/guess";
 import { StatsDialog } from "@/components/stats-dialog";
-import { ModeSwitch } from "@/components/mode-switch";
+import { ModeSwitch, useSwitchedIn } from "@/components/mode-switch";
 import { AccountDialog, Avatar } from "@/components/account-dialog";
 import { Ambient, Stage } from "@/components/now-playing";
 import { useAccount } from "@/lib/account";
@@ -59,6 +59,7 @@ export default function Game({ mode }: { mode: Mode }) {
   const [showQueue, setShowQueue] = useState(false);
   const { account, refresh: refreshAccount } = useAccount();
   const [accountOpen, setAccountOpen] = useState(false);
+  const switchedIn = useSwitchedIn();
   const user = account?.user;
 
   const update = useCallback(
@@ -210,17 +211,21 @@ export default function Game({ mode }: { mode: Mode }) {
     <MotionConfig reducedMotion="user">
       <Ambient cover={view?.answer?.cover ?? null} />
       <div className="relative mx-auto flex min-h-dvh max-w-md flex-col px-6">
-        {/* The header stays put while the game slides under it. */}
-        <ViewTransition name="game-header">
+        {/* The header stays put while the game slides in under it. */}
         <header className="flex items-center justify-between gap-2 py-4">
           <Link href="/" className="font-custom text-xl text-ye transition-opacity hover:opacity-80">
             Ye Guesser
           </Link>
           <ModeSwitch mode={mode} />
         </header>
-        </ViewTransition>
 
-        <main className="flex-1 pb-4">
+        <motion.main
+          className="flex-1 pb-4"
+          // Daily sits left of Unlimited, so the new mode slides in from that side.
+          initial={switchedIn && { opacity: 0, filter: "blur(4px)", x: mode === "unlimited" ? 48 : -48 }}
+          animate={{ opacity: 1, filter: "blur(0px)", x: 0 }}
+          transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1], opacity: { duration: 0.25, ease: "easeOut" } }}
+        >
           {error && (
             <div role="alert" className="mb-4 space-y-3 rounded-2xl bg-miss/15 p-4 text-center text-sm text-miss">
               <p>{error}</p>
@@ -317,7 +322,7 @@ export default function Game({ mode }: { mode: Mode }) {
               <ListMusic className="size-[22px]" />
             </button>
           </nav>
-        </main>
+        </motion.main>
       </div>
 
       <StatsDialog

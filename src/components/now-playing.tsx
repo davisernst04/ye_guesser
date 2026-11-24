@@ -1,24 +1,27 @@
 "use client";
 
 // The pieces of the player screen that only draw things: background, artwork and guess list.
-import { ViewTransition } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, SkipForward, X } from "lucide-react";
 import { GUESS_TIMES, MAX_GUESSES, coverUrl, songById, type GameView } from "@/lib/game";
 
 const HIDDEN_COVER = "/ye_stare.jpg";
+let lastSrc: string | undefined;
 
 /** A blurred, slowly drifting copy of the artwork that fills the screen behind the player. */
 export function Ambient({ cover }: { cover: string | null }) {
   const src = cover ? coverUrl(cover, 120) : HIDDEN_COVER;
+  // Each mode is its own page. The new page starts on the old page's artwork, then crossfades.
+  const [shown, setShown] = useState(lastSrc ?? src);
+  /* eslint-disable-next-line react-hooks/set-state-in-effect -- the crossfade needs a render on the old artwork first */
+  useEffect(() => setShown((lastSrc = src)), [src]);
   return (
-    // Named, so it crossfades in place when the mode changes instead of sliding.
-    <ViewTransition name="ambient">
     <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden bg-black">
       <AnimatePresence initial={false}>
         <motion.div
-          key={src}
+          key={shown}
           className="absolute inset-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 0.9 }}
@@ -26,18 +29,17 @@ export function Ambient({ cover }: { cover: string | null }) {
           transition={{ duration: 1.4, ease: "easeInOut" }}
         >
           <Image
-            src={src}
+            src={shown}
             alt=""
             fill
             sizes="120px"
-            unoptimized={!!cover}
+            unoptimized={shown !== HIDDEN_COVER}
             className="scale-[1.75] object-cover blur-3xl saturate-[1.8]"
           />
         </motion.div>
       </AnimatePresence>
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/30 to-black/60" />
     </div>
-    </ViewTransition>
   );
 }
 
