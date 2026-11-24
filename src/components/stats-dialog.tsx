@@ -21,8 +21,6 @@ type Props = {
   children?: React.ReactNode;
 };
 
-const ORDINALS = ["first", "second", "third", "fourth", "fifth", "sixth"];
-
 function dayLabel(result: number | null, daysAgo: number) {
   const when = daysAgo === 0 ? "Today" : daysAgo === 1 ? "Yesterday" : `${daysAgo} days ago`;
   if (result === null) return `${when}: not played`;
@@ -62,13 +60,23 @@ function Recap({ view }: { view: Finished }) {
   );
 }
 
-/**
- * Guest recap: the song, a verdict set like the stacked type on The Life of Pablo
- * cover, and the guesses on the clip's real 30 s timeline.
- */
-function GuestRecap({ view }: { view: Finished }) {
+/** Today's result, stacked and fading like the type on The Life of Pablo cover. */
+function Verdict({ view }: { view: Finished }) {
   const won = view.status === "won";
   const verdict = won ? `Got it / in ${view.guesses.length}` : "Missed / it";
+  return (
+    <p className={`text-[40px] leading-[0.92] tracking-[-0.045em] uppercase ${won ? "text-ye" : "text-miss"}`}>
+      <span className="sr-only">{won ? `Got it in ${view.guesses.length}` : "Missed it"}</span>
+      <span aria-hidden className="block">{verdict}</span>
+      <span aria-hidden className="block opacity-45">{verdict}</span>
+      <span aria-hidden className="block opacity-20">{verdict}</span>
+    </p>
+  );
+}
+
+/** Guest recap: the song, the verdict and the guesses on the clip's real 30 s timeline. */
+function GuestRecap({ view }: { view: Finished }) {
+  const won = view.status === "won";
   const end = view.guesses.length - 1;
   return (
     <>
@@ -90,12 +98,7 @@ function GuestRecap({ view }: { view: Finished }) {
         </div>
       </section>
 
-      <p className={`text-[40px] leading-[0.92] tracking-[-0.045em] uppercase ${won ? "text-ye" : "text-miss"}`}>
-        <span className="sr-only">{won ? `Got it in ${view.guesses.length}` : "Missed it"}</span>
-        <span aria-hidden className="block">{verdict}</span>
-        <span aria-hidden className="block opacity-45">{verdict}</span>
-        <span aria-hidden className="block opacity-20">{verdict}</span>
-      </p>
+      <Verdict view={view} />
 
       <div aria-hidden className="relative">
         <div className="relative h-2 overflow-hidden rounded-full bg-glass">
@@ -159,21 +162,9 @@ function LoginStrip({ streak, onLogin }: { streak: number; onLogin: () => void }
 }
 
 /** The stats as one sentence of liner notes. */
-function Credits({ stats, view }: { stats: Stats; view?: GameView }) {
-  const won = view?.status === "won";
+function Credits({ stats }: { stats: Stats }) {
   return (
     <p className="text-sm leading-relaxed font-normal text-label-2">
-      {view?.answer &&
-        (won ? (
-          <>
-            Solved at <b className="text-ye">{GUESS_TIMES[view.guesses.length - 1]}s</b> on the{" "}
-            {ORDINALS[view.guesses.length - 1]} guess.{" "}
-          </>
-        ) : (
-          <>
-            <b className="text-miss">Missed</b> today&apos;s song.{" "}
-          </>
-        ))}
       {stats.currentStreak > 0 ? (
         <>
           <b className="text-foreground">{stats.currentStreak}-day streak</b>, best {stats.bestStreak}.
@@ -202,13 +193,22 @@ export function StatsDialog({ stats, open, onOpenChange, highlight, onLogin, vie
           <DialogDescription>Daily games only</DialogDescription>
         </DialogHeader>
 
-        {view && answer && (onLogin ? <GuestRecap view={{ ...view, answer }} /> : <Recap view={{ ...view, answer }} />)}
+        {view &&
+          answer &&
+          (onLogin ? (
+            <GuestRecap view={{ ...view, answer }} />
+          ) : (
+            <>
+              <Recap view={{ ...view, answer }} />
+              <Verdict view={{ ...view, answer }} />
+            </>
+          ))}
 
         {onLogin ? (
           <LoginStrip streak={view?.status === "won" ? stats.currentStreak : 0} onLogin={onLogin} />
         ) : (
           <>
-            <Credits stats={stats} view={view} />
+            <Credits stats={stats} />
 
             {/* Wins by clip length, laid out like the tracklist on an album's back cover. */}
             <section aria-label="Solved at">
