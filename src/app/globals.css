@@ -96,7 +96,9 @@
   --glass-edge: rgb(255 255 255 / 0.1);
   --label-2: rgb(235 235 245 / 0.62);
   --label-3: rgb(235 235 245 / 0.32);
-  --background: oklch(0.145 0 0);
+  /* Pure black, to match theme-color and the home page behind its dim
+     layer. iOS Safari tints its top and bottom bars with this colour. */
+  --background: #000;
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
