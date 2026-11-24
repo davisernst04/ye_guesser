@@ -6,24 +6,26 @@ import { FanNote } from "@/components/fan-note";
 import Link from "next/link";
 import { memo } from "react";
 
+// Major releases in release order. The marquee shows them top to bottom,
+// one column after the next. Covers come from Deezer and live in public/covers.
 const ALBUM_COVERS = [
-  "https://lastfm.freetls.fastly.net/i/u/ar0/61d5e94c9aa712b29e283325bc5ae87f.jpg",
-  "https://dailytrojan.com/wp-content/uploads/2016/08/14-Late-Registration-2005-Kanye-West-Album-Covers.jpg",
-  "https://i.imgur.com/aAEEK.jpeg",
-  "https://www.hmv.ca/dw/image/v2/BDFX_PRD/on/demandware.static/-/Sites-toys-master-catalog/default/dw5b52f7eb/images/24401BFC_1.jpg?sw=767&sh=767&sm=fit",
-  "https://lastfm.freetls.fastly.net/i/u/ar0/f5afd8fe052b452c999b657664cae99f.jpg",
-  "https://upload.wikimedia.org/wikipedia/en/e/ee/Watch_The_Throne.jpg",
-  "https://upload.wikimedia.org/wikipedia/en/0/03/Yeezus_album_cover.png",
-  "https://upload.wikimedia.org/wikipedia/en/4/4d/The_life_of_pablo_alternate.jpg",
-  "https://upload.wikimedia.org/wikipedia/en/7/74/Ye_album_cover.jpg",
-  "https://m.media-amazon.com/images/I/81vqCvM2EJL._UF1000,1000_QL80_.jpg",
-  "https://m.media-amazon.com/images/I/61Ptk7IYKDL._UF1000,1000_QL80_.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Almost_black_square_020305.svg/220px-Almost_black_square_020305.svg.png",
-  "https://upload.wikimedia.org/wikipedia/en/thumb/b/b2/Kanye_West_and_Ty_Dolla_Sign_%28%C2%A5%24%29_%E2%80%93_Vultures.png/220px-Kanye_West_and_Ty_Dolla_Sign_%28%C2%A5%24%29_%E2%80%93_Vultures.png",
-  "https://upload.wikimedia.org/wikipedia/en/6/66/%C2%A5%24_-_Vultures_2.png",
-] as const;
-
-const MARQUEE_IMAGES = [...ALBUM_COVERS, ...ALBUM_COVERS];
+  { src: "/covers/01-the-college-dropout.jpg", alt: "The College Dropout" },
+  { src: "/covers/02-late-registration.jpg", alt: "Late Registration" },
+  { src: "/covers/03-graduation.jpg", alt: "Graduation" },
+  { src: "/covers/04-808s-and-heartbreak.jpg", alt: "808s & Heartbreak" },
+  { src: "/covers/05-my-beautiful-dark-twisted-fantasy.jpg", alt: "My Beautiful Dark Twisted Fantasy" },
+  { src: "/covers/06-watch-the-throne.jpg", alt: "Watch the Throne" },
+  { src: "/covers/07-yeezus.jpg", alt: "Yeezus" },
+  { src: "/covers/08-the-life-of-pablo.jpg", alt: "The Life of Pablo" },
+  { src: "/covers/09-ye.jpg", alt: "ye" },
+  { src: "/covers/10-kids-see-ghosts.jpg", alt: "Kids See Ghosts" },
+  { src: "/covers/11-jesus-is-king.jpg", alt: "Jesus Is King" },
+  { src: "/covers/12-donda.jpg", alt: "Donda" },
+  { src: "/covers/13-donda-2.jpg", alt: "Donda 2" },
+  { src: "/covers/14-vultures-1.jpg", alt: "Vultures 1" },
+  { src: "/covers/15-vultures-2.jpg", alt: "Vultures 2" },
+  { src: "/covers/16-bully.jpg", alt: "Bully" },
+];
 
 function HomePage() {
   return (
@@ -55,7 +57,7 @@ function HomePage() {
       <div className="absolute inset-0 z-10 h-full w-full bg-black/60 dark:bg-black/40" />
       <ThreeDMarquee
         className="pointer-events-none absolute inset-0 h-full w-full z-0 "
-        images={MARQUEE_IMAGES}
+        images={ALBUM_COVERS}
       />
     </div>
   );

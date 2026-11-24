@@ -120,3 +120,20 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Home page background (components/ui/3d-marquee.tsx). Scrolls a column by
+   exactly one copy of its covers, so the loop is seamless. */
+@keyframes marquee-scroll {
+  from {
+    transform: translateY(calc(var(--marquee-copy) * -2));
+  }
+  to {
+    transform: translateY(calc(var(--marquee-copy) * -1));
+  }
+}
+
+@keyframes marquee-fade-in {
+  from {
+    opacity: 0;
+  }
+}
