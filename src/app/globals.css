@@ -155,19 +155,7 @@
   }
 }
 
-/* The blurred cover behind the player drifts slowly, like Apple Music's animated backgrounds. */
-@keyframes ambient-drift {
-  0% { transform: scale(1.6) rotate(0deg); }
-  50% { transform: scale(1.9) rotate(180deg); }
-  100% { transform: scale(1.6) rotate(360deg); }
-}
-
-@layer utilities {
-  .animate-ambient { animation: ambient-drift 90s linear infinite; }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .animate-ambient { animation: none; }
   *, *::before, *::after { transition-duration: 0.01ms !important; }
 }
 

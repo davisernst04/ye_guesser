@@ -293,14 +293,7 @@ export default function Game({ mode }: { mode: Mode }) {
                 {view.status === "playing" ? (
                   <SongPicker onGuess={guess} exclude={view.guesses.map((g) => g.songId)} disabled={busy} />
                 ) : view.mode === "daily" ? (
-                  <div className="space-y-2 text-center">
-                    {shareButton}
-                    <p className="text-xs">
-                      <Link href="/unlimited" transitionTypes={slideTo("unlimited")} className="text-ye underline-offset-4 hover:underline">
-                        Play unlimited
-                      </Link>
-                    </p>
-                  </div>
+                  shareButton
                 ) : (
                   <Button onClick={start} disabled={busy} size="lg" className="w-full">
                     Next song
