@@ -3,13 +3,13 @@
 import { ViewTransition, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { BarChart3, Check, FastForward, Flag, ListMusic, Share2 } from "lucide-react";
+import { BarChart3, Check, CircleUserRound, FastForward, Flag, ListMusic, Share2, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AudioPlayer, { glyphButton } from "@/components/audio-player";
 import { SongPicker } from "@/components/guess";
 import { StatsDialog } from "@/components/stats-dialog";
 import { FanNote } from "@/components/fan-note";
-import { AccountDialog, Avatar } from "@/components/account-dialog";
+import { AccountDialog } from "@/components/account-dialog";
 import { Ambient, Stage } from "@/components/now-playing";
 import { useAccount } from "@/lib/account";
 import { cn } from "@/lib/utils";
@@ -312,9 +312,9 @@ export default function Game({ mode }: { mode: Mode }) {
                 type="button"
                 onClick={() => setAccountOpen(true)}
                 aria-label={user?.username ? `Account: ${user.username}` : "Account"}
-                className={`${glyphButton} size-11`}
+                className={`${glyphButton} size-11 text-white/80`}
               >
-                <Avatar name={user?.username} className={`size-7 text-xs ${user ? "bg-white/90" : "bg-transparent text-white/80"}`} />
+                {user ? <CircleUserRound className="size-[22px]" /> : <UserRound className="size-[22px]" />}
               </button>
             ) : (
               <span />
