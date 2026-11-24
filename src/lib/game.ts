@@ -49,6 +49,7 @@ export function songById(id: number): Song | undefined {
   return SONGS.find((song) => song.id === id);
 }
 
-export function coverUrl(md5: string): string {
-  return `https://e-cdns-images.dzcdn.net/images/cover/${md5}/500x500.jpg`;
+/** Deezer serves covers at any square size. */
+export function coverUrl(md5: string, size = 500): string {
+  return `https://e-cdns-images.dzcdn.net/images/cover/${md5}/${size}x${size}.jpg`;
 }

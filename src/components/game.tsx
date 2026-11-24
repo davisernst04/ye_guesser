@@ -1,20 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
-import { BarChart3, Check, Share2, UserRound } from "lucide-react";
+import { AnimatePresence, MotionConfig, motion } from "motion/react";
+import { BarChart3, Check, FastForward, Flag, ListMusic, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import AudioPlayer from "@/components/audio-player";
+import AudioPlayer, { glyphButton } from "@/components/audio-player";
 import { SongPicker } from "@/components/guess";
 import { StatsDialog } from "@/components/stats-dialog";
 import { FanNote } from "@/components/fan-note";
-import { AccountDialog } from "@/components/account-dialog";
+import { AccountDialog, Avatar } from "@/components/account-dialog";
+import { Ambient, Stage } from "@/components/now-playing";
 import { useAccount } from "@/lib/account";
+import { cn } from "@/lib/utils";
 import {
   GUESS_TIMES,
   MAX_GUESSES,
-  coverUrl,
   localPuzzle,
   songById,
   type GameResponse,
@@ -53,6 +54,8 @@ export default function Game({ mode }: { mode: Mode }) {
   const [statsOpen, setStatsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [justFinished, setJustFinished] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [showQueue, setShowQueue] = useState(false);
   const { account, refresh: refreshAccount } = useAccount();
   const [accountOpen, setAccountOpen] = useState(false);
   const [shareName, setShareName] = useState(() => loadJson<boolean>("ye:shareName") ?? false);
@@ -134,156 +137,197 @@ export default function Game({ mode }: { mode: Mode }) {
   }
 
   const shareButton = view && view.mode === "daily" && view.status !== "playing" && (
-    <Button onClick={() => share(view)} className="w-full">
-      {copied ? <Check /> : <Share2 />} {copied ? "COPIED" : "SHARE"}
+    <Button onClick={() => share(view)} size="lg" className="w-full">
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.span
+          key={copied ? "copied" : "share"}
+          className="flex items-center gap-2"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ type: "spring", stiffness: 500, damping: 32 }}
+        >
+          {copied ? <Check /> : <Share2 />} {copied ? "Copied to clipboard" : "Share result"}
+        </motion.span>
+      </AnimatePresence>
     </Button>
   );
 
+  const skipSeconds = view && view.guesses.length < MAX_GUESSES - 1
+    ? GUESS_TIMES[view.guesses.length + 1]! - GUESS_TIMES[view.guesses.length]!
+    : null;
+  // The ▶▶ button skips while playing, and goes to the next song once a practice game ends.
+  const forward =
+    view?.status === "playing"
+      ? { onClick: () => guess(null), caption: skipSeconds ? `+${skipSeconds}s` : "Give up",
+          label: skipSeconds ? `Skip and unlock ${skipSeconds} more seconds` : "Give up" }
+      : view?.mode === "practice"
+        ? { onClick: start, caption: "Next", label: "Next song" }
+        : null;
+  const forwardButton = (
+    <button
+      type="button"
+      onClick={forward?.onClick}
+      disabled={!forward || busy}
+      aria-label={forward?.label ?? "No skip after the game ends"}
+      className={`${glyphButton} relative size-14`}
+    >
+      {forward?.caption === "Give up" ? (
+        <Flag className="size-7" fill="currentColor" />
+      ) : (
+        <FastForward className="size-8" fill="currentColor" strokeWidth={0} />
+      )}
+      {forward && (
+        <span className="absolute -bottom-3 text-[11px] text-white/60 tabular-nums">{forward.caption}</span>
+      )}
+    </button>
+  );
+
+  const last = view?.guesses.at(-1);
+  const lastSong = last?.songId ? songById(last.songId) : null;
+  const hint = !last
+    ? "Play the clip, then guess the song"
+    : lastSong
+      ? `Not ${lastSong.title}`
+      : "Skipped. More of the clip is unlocked";
+
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col px-4">
-      <header className="flex items-center justify-between py-4">
-        <Link href="/" className="font-custom text-xl" style={{ color: "#13f235" }}>
-          Ye Guesser
-        </Link>
-        <nav className="flex items-center gap-1 text-sm">
-          <Button asChild variant={mode === "daily" ? "secondary" : "ghost"} size="sm">
-            <Link href="/play">DAILY</Link>
-          </Button>
-          <Button asChild variant={mode === "practice" ? "secondary" : "ghost"} size="sm">
-            <Link href="/practice">PRACTICE</Link>
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => setStatsOpen(true)} aria-label="Stats">
-            <BarChart3 />
-          </Button>
-          {account?.enabled &&
-            (user?.username ? (
-              <Button variant="ghost" size="sm" onClick={() => setAccountOpen(true)} className="max-w-24">
-                <span className="truncate">{user.username}</span>
-              </Button>
-            ) : (
-              <Button variant="ghost" size="icon" onClick={() => setAccountOpen(true)} aria-label="Account">
-                <UserRound />
-              </Button>
+    <MotionConfig reducedMotion="user">
+      <Ambient cover={view?.answer?.cover ?? null} />
+      <div className="relative mx-auto flex min-h-dvh max-w-md flex-col px-6">
+        <header className="flex items-center justify-between gap-2 py-4">
+          <Link href="/" className="font-custom text-xl text-ye transition-opacity hover:opacity-80">
+            Ye Guesser
+          </Link>
+          <nav className="flex rounded-full bg-white/10 p-0.5 text-xs backdrop-blur-xl">
+            {(["daily", "practice"] as const).map((m) => (
+              <Link
+                key={m}
+                href={m === "daily" ? "/play" : "/practice"}
+                aria-current={mode === m ? "page" : undefined}
+                className={`rounded-full px-3 py-1.5 transition-[background-color,color,transform] duration-200 ease-spring active:scale-95 ${
+                  mode === m ? "bg-white/90 text-black" : "text-white/60 hover:text-white"
+                }`}
+              >
+                {m === "daily" ? "DAILY" : "PRACTICE"}
+              </Link>
             ))}
-        </nav>
-      </header>
+          </nav>
+        </header>
 
-      <main className="flex-1 space-y-5 pb-6">
-        {error && (
-          <div role="alert" className="space-y-2 text-center text-sm text-red-500">
-            <p>{error}</p>
-            {!game && <Button onClick={start}>Try again</Button>}
-          </div>
-        )}
+        <main className="flex-1 pb-4">
+          {error && (
+            <div role="alert" className="mb-4 space-y-3 rounded-2xl bg-miss/15 p-4 text-center text-sm text-miss">
+              <p>{error}</p>
+              {!game && <Button onClick={start}>Try again</Button>}
+            </div>
+          )}
 
-        {playedElsewhere ? (
-          <div className="mt-24 space-y-3 text-center">
-            <h1 className="text-2xl font-bold">DAILY #{today}</h1>
-            <p className="text-sm text-muted-foreground">
-              You already played today&apos;s song on another device. New song at midnight.
-            </p>
-            <Button onClick={() => setStatsOpen(true)}>SEE STATS</Button>
-          </div>
-        ) : !view ? (
-          !error && <div className="mx-auto mt-24 size-12 animate-spin rounded-full border-b-2 border-primary" />
-        ) : (
-          <>
-            <div className="text-center" role="status" aria-live="polite">
-              {view.status === "playing" ? (
-                <>
-                  <h1 className="text-2xl font-bold">
-                    {view.mode === "daily" ? `DAILY #${view.puzzle}` : "PRACTICE"}
+          {playedElsewhere ? (
+            <div className="mt-24 space-y-4 text-center">
+              <h1 className="text-2xl font-bold">DAILY #{today}</h1>
+              <p className="text-sm text-label-2">
+                You already played today&apos;s song on another device. New song at midnight.
+              </p>
+              <Button onClick={() => setStatsOpen(true)}>See stats</Button>
+            </div>
+          ) : !view ? (
+            !error && (
+              <div className="mt-2 aspect-square w-full animate-pulse rounded-xl bg-white/10" />
+            )
+          ) : (
+            <div className="pt-2">
+              <Stage view={view} playing={playing} queue={showQueue} />
+
+              <div className="mt-8 flex items-center gap-3" role="status" aria-live="polite">
+                <div className="min-w-0 flex-1">
+                  <h1 className="truncate text-xl font-bold">
+                    {view.answer ? view.answer.title : `Guess ${view.guesses.length + 1} of ${MAX_GUESSES}`}
                   </h1>
-                  <p className="text-sm text-muted-foreground">
-                    GUESS {view.guesses.length + 1} OF {MAX_GUESSES} · {view.clipSeconds}s CLIP
-                  </p>
-                </>
-              ) : (
-                <>
-                  <h1 className="text-2xl font-bold">{view.status === "won" ? "CORRECT" : "NOT THIS TIME"}</h1>
-                  <p className="text-sm text-muted-foreground">
-                    {view.status === "won"
-                      ? `Got it in ${view.guesses.length} ${view.guesses.length === 1 ? "guess" : "guesses"}`
-                      : "The answer was"}
-                  </p>
-                </>
-              )}
-            </div>
-
-            <div className="relative mx-auto aspect-square w-full max-w-64">
-              <Image
-                src={view.answer ? coverUrl(view.answer.cover) : "/ye_stare.jpg"}
-                alt={view.answer ? `Cover of ${view.answer.album}` : "Ye stare"}
-                fill
-                sizes="256px"
-                className="rounded-lg object-cover shadow-lg"
-                priority
-              />
-            </div>
-
-            {view.answer && (
-              <div className="text-center">
-                <p className="text-lg font-bold">{view.answer.title}</p>
-                <p className="text-sm text-muted-foreground">{view.answer.album}</p>
+                  <p className="truncate text-white/60">{view.answer ? view.answer.album : hint}</p>
+                </div>
+                <AnimatePresence>
+                  {view.status !== "playing" && (
+                    <motion.span
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 18, delay: 0.3 }}
+                      className={`shrink-0 rounded-full px-3 py-1 text-xs ${
+                        view.status === "won" ? "bg-ye text-black" : "bg-miss/25 text-[#ff8a80]"
+                      }`}
+                    >
+                      {view.status === "won" ? `Solved in ${view.guesses.length}` : "Missed"}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </div>
-            )}
 
-            <AudioPlayer
-              key={game.token}
-              token={game.token}
-              seconds={view.clipSeconds}
-              autoPlay={justFinished}
-            />
-
-            {view.status === "playing" ? (
-              <div className="flex gap-2">
-                <SongPicker
-                  onGuess={guess}
-                  exclude={view.guesses.map((g) => g.songId)}
-                  disabled={busy}
-                  className="min-w-0 flex-1"
+              <div className="mt-5">
+                <AudioPlayer
+                  key={game.token}
+                  token={game.token}
+                  seconds={view.clipSeconds}
+                  autoPlay={justFinished}
+                  onPlayingChange={setPlaying}
+                  label={view.mode === "daily" ? `DAILY #${view.puzzle}` : "PRACTICE"}
+                  after={forwardButton}
                 />
-                <Button variant="secondary" onClick={() => guess(null)} disabled={busy}>
-                  {view.guesses.length < MAX_GUESSES - 1
-                    ? `SKIP +${GUESS_TIMES[view.guesses.length + 1]! - GUESS_TIMES[view.guesses.length]!}s`
-                    : "GIVE UP"}
-                </Button>
               </div>
-            ) : view.mode === "daily" ? (
-              <div className="space-y-2 text-center">
-                {shareButton}
-                <p className="text-sm text-muted-foreground">New song at midnight. Try practice while you wait.</p>
+
+              {/* Where Apple Music has the volume slider. */}
+              <div className="mt-6">
+                {view.status === "playing" ? (
+                  <SongPicker onGuess={guess} exclude={view.guesses.map((g) => g.songId)} disabled={busy} />
+                ) : view.mode === "daily" ? (
+                  <div className="space-y-2 text-center">
+                    {shareButton}
+                    <p className="text-xs text-white/60">
+                      New song at midnight.{" "}
+                      <Link href="/practice" className="text-ye underline-offset-4 hover:underline">
+                        Practice while you wait
+                      </Link>
+                    </p>
+                  </div>
+                ) : (
+                  <Button onClick={start} disabled={busy} size="lg" className="w-full">
+                    Next song
+                  </Button>
+                )}
               </div>
+            </div>
+          )}
+
+          <nav className="mt-6 grid grid-cols-3 justify-items-center" aria-label="Player">
+            <button type="button" onClick={() => setStatsOpen(true)} aria-label="Stats" className={`${glyphButton} size-11 text-white/80`}>
+              <BarChart3 className="size-[22px]" />
+            </button>
+            {account?.enabled ? (
+              <button
+                type="button"
+                onClick={() => setAccountOpen(true)}
+                aria-label={user?.username ? `Account: ${user.username}` : "Account"}
+                className={`${glyphButton} size-11`}
+              >
+                <Avatar name={user?.username} className={`size-7 text-xs ${user ? "" : "bg-transparent text-white/80"}`} />
+              </button>
             ) : (
-              <Button onClick={start} disabled={busy} className="w-full">
-                NEXT SONG
-              </Button>
+              <span />
             )}
+            <button
+              type="button"
+              onClick={() => setShowQueue((on) => !on)}
+              disabled={!view}
+              aria-pressed={showQueue}
+              aria-label="Your guesses"
+              className={cn(glyphButton, "size-11 rounded-xl", showQueue ? "bg-white/90 text-black hover:bg-white active:bg-white" : "text-white/80")}
+            >
+              <ListMusic className="size-[22px]" />
+            </button>
+          </nav>
+        </main>
 
-            <ol className="space-y-1.5">
-              {Array.from({ length: MAX_GUESSES }, (_, i) => {
-                const g = view.guesses[i];
-                const song = g?.songId ? songById(g.songId) : null;
-                return (
-                  <li
-                    key={i}
-                    className={`flex h-9 items-center justify-between rounded-md border px-3 text-sm ${
-                      g?.correct ? "border-green-500 text-green-500" : g ? "border-red-500/60" : "border-dashed"
-                    }`}
-                  >
-                    <span className={`truncate ${g && !g.correct && song ? "line-through" : ""}`}>
-                      {g ? (song ? song.title : "Skipped") : ""}
-                    </span>
-                    <span className="text-xs text-muted-foreground">{GUESS_TIMES[i]}s</span>
-                  </li>
-                );
-              })}
-            </ol>
-          </>
-        )}
-      </main>
-
-      <FanNote />
+        <FanNote className="text-label-3" />
+      </div>
 
       <StatsDialog
         stats={stats}
@@ -309,6 +353,6 @@ export default function Game({ mode }: { mode: Mode }) {
           }}
         />
       )}
-    </div>
+    </MotionConfig>
   );
 }

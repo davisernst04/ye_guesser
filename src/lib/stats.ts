@@ -61,7 +61,11 @@ export type Stats = {
   bestStreak: number;
   /** Wins by number of guesses: index 0 = won in 1 guess. */
   distribution: number[];
+  /** The last RECENT_DAYS puzzles, oldest first: guesses used (0 = loss), or null if not played. */
+  recent: (number | null)[];
 };
+
+export const RECENT_DAYS = 28;
 
 export function computeStats(results: Results, today: number): Stats {
   const puzzles = Object.keys(results).map(Number).sort((a, b) => a - b);
@@ -94,6 +98,7 @@ export function computeStats(results: Results, today: number): Stats {
     currentStreak,
     bestStreak,
     distribution,
+    recent: Array.from({ length: RECENT_DAYS }, (_, i) => results[today - RECENT_DAYS + 1 + i] ?? null),
   };
 }
 
