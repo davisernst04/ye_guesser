@@ -102,8 +102,8 @@ export function computeStats(results: Results, today: number): Stats {
   };
 }
 
-/** e.g. "Ye Guesser #327 🟥⬛🟩⬜⬜⬜ 🔥12", then the username if given, then the site link. */
-export function shareText(view: GameView, streak: number, site: string, username?: string | null): string {
+/** e.g. "Ye Guesser #327 🟥⬛🟩⬜⬜⬜ 🔥12", then the site link. */
+export function shareText(view: GameView, streak: number, site: string): string {
   const squares = Array.from({ length: MAX_GUESSES }, (_, i) => {
     const guess = view.guesses[i];
     if (!guess) return "⬜";
@@ -111,6 +111,5 @@ export function shareText(view: GameView, streak: number, site: string, username
     return guess.songId === null ? "⬛" : "🟥";
   }).join("");
   const fire = streak > 0 ? ` 🔥${streak}` : "";
-  const by = username ? `\n— ${username}` : "";
-  return `Ye Guesser #${view.puzzle} ${squares}${fire}${by}\n${site}`;
+  return `Ye Guesser #${view.puzzle} ${squares}${fire}\n${site}`;
 }

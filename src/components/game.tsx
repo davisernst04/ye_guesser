@@ -3,14 +3,14 @@
 import { ViewTransition, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { BarChart3, Check, CircleUserRound, FastForward, Flag, ListMusic, Share2, UserRound } from "lucide-react";
+import { BarChart3, Check, FastForward, Flag, ListMusic, Share2, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AudioPlayer, { glyphButton } from "@/components/audio-player";
 import { SongPicker } from "@/components/guess";
 import { StatsDialog } from "@/components/stats-dialog";
 import { FanNote } from "@/components/fan-note";
 import { ModeSwitch } from "@/components/mode-switch";
-import { AccountDialog } from "@/components/account-dialog";
+import { AccountDialog, Avatar } from "@/components/account-dialog";
 import { Ambient, Stage } from "@/components/now-playing";
 import { useAccount } from "@/lib/account";
 import { cn } from "@/lib/utils";
@@ -59,7 +59,6 @@ export default function Game({ mode }: { mode: Mode }) {
   const [showQueue, setShowQueue] = useState(false);
   const { account, refresh: refreshAccount } = useAccount();
   const [accountOpen, setAccountOpen] = useState(false);
-  const [shareName, setShareName] = useState(() => loadJson<boolean>("ye:shareName") ?? false);
   const user = account?.user;
 
   const update = useCallback(
@@ -128,8 +127,7 @@ export default function Game({ mode }: { mode: Mode }) {
   const playedElsewhere = mode === "daily" && view?.status === "playing" && user?.results[today] !== undefined;
 
   async function share(view: GameView) {
-    const name = shareName ? user?.username : null;
-    const text = shareText(view, stats.currentStreak, window.location.host, name);
+    const text = shareText(view, stats.currentStreak, window.location.host);
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -290,10 +288,10 @@ export default function Game({ mode }: { mode: Mode }) {
               <button
                 type="button"
                 onClick={() => setAccountOpen(true)}
-                aria-label={user?.username ? `Account: ${user.username}` : "Account"}
+                aria-label={user?.name ? `Account: ${user.name}` : "Account"}
                 className={`${glyphButton} size-11 text-white/80`}
               >
-                {user ? <CircleUserRound className="size-[22px]" /> : <UserRound className="size-[22px]" />}
+                {user ? <Avatar profile={user} className="size-[26px] text-xs" /> : <UserRound className="size-[22px]" />}
               </button>
             ) : (
               <span />
@@ -327,17 +325,12 @@ export default function Game({ mode }: { mode: Mode }) {
 
       {account?.enabled && (
         <AccountDialog
-          key={user ? `user:${user.username}` : "guest"}
+          key={user ? "user" : "guest"}
           account={account}
           open={accountOpen}
           onOpenChange={setAccountOpen}
           onChange={refreshAccount}
           next={returnPath}
-          shareName={shareName}
-          onShareNameChange={(value) => {
-            setShareName(value);
-            saveJson("ye:shareName", value);
-          }}
         />
       )}
     </MotionConfig>
