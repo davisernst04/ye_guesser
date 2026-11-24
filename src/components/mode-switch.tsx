@@ -2,16 +2,9 @@
 
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import Link from "next/link";
-import {
-  animate,
-  motion,
-  useMotionTemplate,
-  useMotionValue,
-  useReducedMotion,
-  useTransform,
-  useVelocity,
-} from "motion/react";
+import { animate, motion, useMotionTemplate, useMotionValue, useReducedMotion, useTransform } from "motion/react";
 import type { Mode } from "@/lib/game";
+import { SPRING, useStretch } from "@/lib/glass-motion";
 
 const MODES = [
   { mode: "daily", label: "DAILY", href: "/play" },
@@ -20,9 +13,6 @@ const MODES = [
 
 // Daily sits left of Unlimited, so the game slides that way (see game-loader.tsx).
 const slideTo = (mode: Mode) => [mode === "unlimited" ? "mode-left" : "mode-right"];
-
-// A soft spring with a little overshoot, like the iOS segmented control.
-const SPRING = { type: "spring", stiffness: 380, damping: 30, mass: 0.9 } as const;
 
 // Each mode is its own page, so the switch remounts on every change. The old
 // switch hands its pill to the new one here, and the glide carries on unbroken.
@@ -35,10 +25,8 @@ export function ModeSwitch({ mode }: { mode: Mode }) {
   const x = useMotionValue(0);
   const w = useMotionValue(0);
 
-  // Squash and stretch: the faster the pill moves, the wider, flatter and clearer it gets.
-  const speed = useTransform(useVelocity(x), (v) => Math.min(Math.abs(v) / 1500, 1));
-  const scaleX = useTransform(speed, (s) => 1 + s * 0.18);
-  const scaleY = useTransform(speed, (s) => 1 - s * 0.12);
+  // The faster the pill moves, the wider, flatter and clearer it gets.
+  const { speed, scaleX, scaleY } = useStretch(x);
   const fill = useTransform(speed, (s) => 0.9 - s * 0.45);
   const background = useMotionTemplate`rgb(255 255 255 / ${fill})`;
   // The dark labels show only where the pill is.
