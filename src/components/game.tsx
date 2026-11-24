@@ -52,6 +52,7 @@ export default function Game({ mode }: { mode: Mode }) {
   const [busy, setBusy] = useState(false);
   const [results, setResults] = useState(loadResults);
   const [statsOpen, setStatsOpen] = useState(false);
+  const [savedDaily] = useState(() => (mode === "daily" ? undefined : loadGame("daily", "ye:daily")?.view));
   const [copied, setCopied] = useState(false);
   const [justFinished, setJustFinished] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -124,8 +125,9 @@ export default function Game({ mode }: { mode: Mode }) {
   const returnPath = mode === "daily" ? "/play" : "/unlimited";
   // This account finished today's puzzle on another device, so this game wouldn't count.
   const playedElsewhere = mode === "daily" && view?.status === "playing" && user?.results[today] !== undefined;
-  // Today's finished daily game, which the stats dialog leads with.
-  const recap = view?.mode === "daily" && view.status !== "playing" ? view : undefined;
+  // Today's finished daily game, which the stats dialog leads with. Unlimited reads it from the daily save.
+  const daily = mode === "daily" ? view : savedDaily;
+  const recap = daily && daily.status !== "playing" ? daily : undefined;
   // Guests keep stats only in this browser, so they see the login sheet in their place.
   const guest = Boolean(account?.enabled && !user);
   function openLogin() {
@@ -144,8 +146,8 @@ export default function Game({ mode }: { mode: Mode }) {
     }
   }
 
-  const shareButton = view && view.mode === "daily" && view.status !== "playing" && (
-    <Button onClick={() => share(view)} size="lg" className="w-full">
+  const shareButton = recap && (
+    <Button onClick={() => share(recap)} size="lg" className="w-full">
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.span
           key={copied ? "copied" : "share"}
@@ -325,7 +327,7 @@ export default function Game({ mode }: { mode: Mode }) {
         stats={stats}
         open={statsOpen}
         onOpenChange={setStatsOpen}
-        highlight={view?.mode === "daily" && view.status === "won" ? view.guesses.length : undefined}
+        highlight={recap?.status === "won" ? recap.guesses.length : undefined}
         onLogin={guest ? openLogin : undefined}
         view={recap}
       >
