@@ -181,6 +181,63 @@ function Credits({ stats }: { stats: Stats }) {
   );
 }
 
+/**
+ * Wins by clip length, laid out like the tracklist on an album's back cover,
+ * with a bar per row so the most common result stands out. Losses get the last row.
+ */
+function Tracklist({ stats, highlight }: { stats: Stats; highlight?: number }) {
+  const misses = stats.played - stats.wins;
+  const most = Math.max(1, misses, ...stats.distribution);
+  const rows = [
+    ...stats.distribution.map((count, i) => {
+      const today = highlight === i + 1;
+      return {
+        count,
+        mark: String(i + 1),
+        name: `0:${String(GUESS_TIMES[i]).padStart(2, "0")}`,
+        label: `${count} ${count === 1 ? "win" : "wins"} at ${GUESS_TIMES[i]} seconds`,
+        text: today ? "text-ye" : "",
+        bar: today ? "bg-ye" : "bg-glass-strong",
+      };
+    }),
+    { count: misses, mark: "✕", name: "Miss", label: `${misses} missed`, text: "", bar: "bg-miss/55" },
+  ];
+
+  return (
+    <section aria-label="Solved at">
+      <ol className="border-t border-glass-strong">
+        {rows.map((row) => (
+          <li
+            key={row.mark}
+            aria-label={row.label}
+            className={`flex items-center gap-2.5 border-b border-glass py-2 text-sm tabular-nums ${
+              row.count ? row.text : "text-label-3"
+            }`}
+          >
+            <span aria-hidden className="w-4 text-label-3">
+              {row.mark}
+            </span>
+            <span aria-hidden className={`w-9 ${row.mark === "✕" && row.count ? "text-miss" : ""}`}>
+              {row.name}
+            </span>
+            <span aria-hidden className="h-3.5 flex-1">
+              {row.count > 0 && (
+                <span
+                  className={`block h-full min-w-1.5 rounded-[3px] ${row.bar}`}
+                  style={{ width: `${(row.count / most) * 100}%` }}
+                />
+              )}
+            </span>
+            <span aria-hidden className="w-5 text-right">
+              {row.count}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export function StatsDialog({ stats, open, onOpenChange, highlight, onLogin, view, children }: Props) {
   const answer = view?.answer;
 
@@ -210,33 +267,7 @@ export function StatsDialog({ stats, open, onOpenChange, highlight, onLogin, vie
           <>
             <Credits stats={stats} />
 
-            {/* Wins by clip length, laid out like the tracklist on an album's back cover. */}
-            <section aria-label="Solved at">
-              <ol className="border-t border-glass-strong">
-                {stats.distribution.map((count, i) => {
-                  const today = highlight === i + 1;
-                  const wins = `${count} ${count === 1 ? "win" : "wins"}`;
-                  return (
-                    <li
-                      key={i}
-                      aria-label={`${wins} at ${GUESS_TIMES[i]} seconds`}
-                      className={`flex items-baseline gap-2.5 border-b border-glass py-2 text-sm tabular-nums ${
-                        today ? "text-ye" : count ? "" : "text-label-3"
-                      }`}
-                    >
-                      <span aria-hidden className={`w-4 ${today ? "" : "text-label-3"}`}>
-                        {i + 1}
-                      </span>
-                      <span aria-hidden className="w-9">
-                        0:{String(GUESS_TIMES[i]).padStart(2, "0")}
-                      </span>
-                      <span aria-hidden className="flex-1 -translate-y-1 border-b-2 border-dotted border-glass-strong" />
-                      <span aria-hidden>{wins}</span>
-                    </li>
-                  );
-                })}
-              </ol>
-            </section>
+            <Tracklist stats={stats} highlight={highlight} />
 
             {/* The last few weeks as a barcode, oldest on the left. */}
             <section aria-label={`Last ${RECENT_DAYS} days`}>
